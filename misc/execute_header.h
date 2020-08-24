@@ -1,35 +1,27 @@
 //  *****************************************************************************
 //  *
-//  *    simple_header.h -- 
+//  *    execute_header.h -- 
 //  *    Author: Wade Shiell
-//  *    Date Created: Mon Aug 17 15:08:55 2020
+//  *    Date Created: Thu Aug 20 11:47:13 2020
 //  *
 //  *****************************************************************************
 
-#ifndef SIMPLE_HEADER_H
-#define SIMPLE_HEADER_H
+#ifndef EXECUTE_HEADER_H
+#define EXECUTE_HEADER_H
 
-#include <stdio.h>
-#include <math.h>
-#define MEMORY_SIZE 1000 // Define size of Simpletron 'memory' 
-
-// Runs Simpletron program on behalf of main.
-void run_simpletron(char program_name[]);
-
-// Load program from file.
-void load_file(int memory[MEMORY_SIZE], char file_name[],
-	       int *instruction_counter_ptr);
-
-// Runs the instructions stored in Simpletron 'memory'.
-void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
-	     unsigned int *operation_code_ptr, int *instruction_counter_ptr,
-	     int *accumulator_ptr, int *operand_ptr) ;
+#include "data_header.h"
 
 // Reads an hexadecumal integer from the keyboard and stores in 'memory'.
 void read_instruction(int memory[MEMORY_SIZE], int *operand_ptr);
 
-// Writes an decimal integer from 'memory' and displays it on screen.
+// Writes an hexadecimal integer from 'memory' and displays it on screen.
 void write_instruction(int memory[MEMORY_SIZE], int *operand_ptr);
+
+// Reads a string from the keyboard and stores it in 'memory'.
+void read_string(int memory[MEMORY_SIZE], int *operand_ptr);
+
+// Writes a string from 'memory' and displays it on screen.
+void write_string(int memory[MEMORY_SIZE], int *operand_ptr);
 
 // Loads an instruction from 'memory' into the accumulator.
 void load_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
@@ -63,6 +55,9 @@ void remainder_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 void exponentiation_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 				int *accumulator_ptr);
 
+// Returns a newline character.
+void newline(int memory[MEMORY_SIZE], int *operand_ptr);
+
 // Branches to a 'memory' location.
 void branch_instruction(int *instruction_counter_ptr,
 			int *operand_ptr, int *toggle_ptr);
@@ -78,13 +73,16 @@ void branchzero_instruction(int *accumulator_ptr, int *instruction_counter_ptr,
 // Terminates execution of the program loaded in 'memory'.
 void halt_instruction(int *terminate_ptr);
 
-// Terminates execution if an abnormal instruction is detected.
-void default_instruction(int *terminate_ptr);
+// Increments the value of the 'memory' location counter by one.
+void increment_counter(int *toggle_ptr, int *instruction_counter_ptr);
 
 // Loads operation type and operand into 'instruction_register' and 'operand'.
 void load_register(int memory[MEMORY_SIZE], int *instruction_counter_ptr,
 		   unsigned int *instruction_register_ptr,
 		   unsigned int *operation_code_ptr, int *operand_ptr);
+
+// Handles formatting for printing prompts and information.
+void print(int lines, ...);
 
 #endif
 

@@ -1,18 +1,16 @@
 //  *****************************************************************************
 //  *
-//  *    main.c -- 
+//  *    data_header.h -- 
 //  *    Author: Wade Shiell
-//  *    Date Created: Sun Aug 16 16:46:21 2020
+//  *    Date Created: Sun Aug 23 09:37:35 2020
 //  *
 //  *****************************************************************************
 
-#include "simple_header.h"
+#ifndef DATA_HEADER_H
+#define DATA_HEADER_H
 
-int main(int argc, char **argv)
-{
-  // Run 'Simpletron Machine Language' program.
-  run_simpletron(argv[1]);
-}
+
+#endif
 
 // ******************************************************************************
 // **                                                                          **

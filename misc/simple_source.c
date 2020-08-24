@@ -1,6 +1,6 @@
 //  *****************************************************************************
 //  *
-//  *    source.c -- 
+//  *    simple_source.c -- 
 //  *    Author: Wade Shiell
 //  *    Date Created: Mon Aug 17 15:14:05 2020
 //  *
@@ -8,6 +8,11 @@
 
 #include "simple_header.h"
 #include "execute_header.h"
+#define RED "\033[0;31m"
+#define GREEN "\033[0;32m"
+#define YELLOW "\033[0;33m"
+#define BLUE "\033[0;34m"
+#define RESET "\033[0m"
 
 //  *****************************************************************************
 //  ***                     Function 'run_simpletron'                         ***
@@ -30,6 +35,7 @@ void run_simpletron(void)
   int *instruction_counter_ptr;
   int *accumulator_ptr;
   int *operand_ptr;
+  
   instruction_register_ptr = &instruction_register;
   operation_code_ptr = &operation_code;
   instruction_counter_ptr = &instruction_counter;
@@ -43,20 +49,21 @@ void run_simpletron(void)
 
   // Loop until user quits program (mode = 13).
   do {
-    // Prompt the user to chose Simpletron mode.
-    printf("\n%s%s\n%s", "***                       -Select mode-",
-	   "                          ***",
-	   "                              >> ");
+    print(4,
+	  "* ",
+	  "Select Mode",
+	  " *",
+	  ">> ");
     scanf("%d", &mode);
      
     // Choose between program execution options (manual, file, quit).
     switch (mode) {
 
-    case VIEW: // View list of saved programs.
-      view_programs(memory);
+    case VIEW_PRG: // View list of saved programs.
+      view_programs();
       // What if no programs present?
       break;
-    case DELETE: // Delete a program.
+    case DEL_PRG: // Delete a program.
       delete_program();
       // What if no programs present? Or invalid name entered?
       break;
@@ -77,33 +84,33 @@ void run_simpletron(void)
       // Add statements.
       // What if no program loaded?
       break;
-    case EDIT: // Edit loaded program.
+    case EDIT_INSTR: // Edit loaded program.
       edit_program(memory, instruction_counter_ptr);
       // What if no program loaded?
       break;
-    case RUN: // Run loaded program.
+    case RUN_PRG: // Run loaded program.
       execute(memory, instruction_register_ptr, operation_code_ptr,
 	      instruction_counter_ptr, accumulator_ptr, operand_ptr);
       // What if no program loaded?      
       break;
-    case PR_REG: // Print register.
-     print_registers(1, register_string,
-		     accumulator_ptr, instruction_counter_ptr,
-		     instruction_register_ptr, 
-		     operation_code_ptr, operand_ptr);
+    case PRT_REG: // Print register.
+      print_registers(1, register_string,
+		      accumulator_ptr, instruction_counter_ptr,
+		      instruction_register_ptr, 
+		      operation_code_ptr, operand_ptr);
       // What if no program loaded? Will print, but need to print error message.      
       break;
-    case PR_MEM: // Print Simpletron 'memory'.
+    case PRT_MEM: // Print Simpletron 'memory'.
       print_memory_dump(memory, dump_file);
       // What if no program loaded? Will print, but need to print error message.      
       break;
-    case PR_DUMP: // Print Simpletron dump ('memory' & registers).
+    case PRT_DUMP: // Print Simpletron dump ('memory' & registers).
       dump(memory, register_string, dump_file, instruction_register_ptr,
 	   operation_code_ptr, instruction_counter_ptr, accumulator_ptr,
 	   operand_ptr);
       // What if no program loaded? Will print, but need to print error message.      
       break;
-    case SAVE_DUMP: // Save Simpletron dump to file.
+    case SAVE_MEM: // Save Simpletron dump to file.
       save_dump(memory, dump_file, 0);
       // Add program/file name to header in saved file?
       // What if no program loaded? Will print, but need to print error message.      
@@ -112,13 +119,16 @@ void run_simpletron(void)
       print_goodbye();
       break;
     default: // Prompts user for further input if invalid choice is made.
-      printf("\n%s\n\n",
-	     "XXX              "
-	     "Invalid choice. Please choose again."
-	     "            XXX");
-      printf("%s%s\n%s", "***                       -Select mode-",
-	     "                          ***",
-	     "                              >> ");
+      print(4,
+	    "* ",
+	    "Invalid Choice",
+	    "Please Choose Again",
+	    " *");
+      print(4,
+	    "* ",
+	    "Select Mode",
+	    " *",
+	    ">> ");
       scanf("%d", &mode);
       break;
     }
@@ -128,9 +138,51 @@ void run_simpletron(void)
 //  *****************************************************************************
 //  ***                     Function 'view_programs'                          ***
 //  *****************************************************************************
-void view_programs(int memory[MEMORY_SIZE])
+void view_programs(void)
 {
-  ;
+  DIR *current_dir = opendir("."); // Opens path to current directory.
+
+  // If the directory cannot be accessed, print an error message.
+  if (current_dir == NULL) {
+    print(3,
+	  "* ",
+	  "Could Not Read From Directory",
+	  " *");
+  }
+  // If the directory can be accessed, list program files (if any).
+  else {
+    struct dirent *dir_entries; // dirent struct containing directory info.
+    unsigned int file_count = 0; // Tracks number of program files in directory.
+
+    // If directory is not empty, iterate through the files contained in the
+    // directory, printing those with ".txt" suffix, and ignoring the rest.
+    while ((dir_entries = readdir(current_dir)) != NULL) {
+      // If the file has a ".txt" suffix.
+      if (strstr(dir_entries->d_name, ".txt")) {
+	print(3, "* ", dir_entries->d_name, " *");
+	/* printf("%s\n", dir_entries->d_name); */
+	file_count++; // Increment number of program files.
+      }
+    }
+    // If no program files present, print appropriate message.
+    if (file_count == 0) {
+      print(3,
+	    "* ",
+	    "No Program Files Present",
+	    " *");
+    }
+    // Print number of program files present.
+    else {
+      print(4,
+	    "* ",
+	    "File Count",
+	    " *",
+	    ">> ");
+      printf("%u\n", file_count);
+    }
+  }
+  
+  closedir(current_dir); // Closes path to current directory.
 }
 
 //  *****************************************************************************
@@ -138,7 +190,51 @@ void view_programs(int memory[MEMORY_SIZE])
 //  *****************************************************************************
 void delete_program(void)
 {
-  ;
+  char to_delete[FILE_LENGTH]; // Name of file to be deleted.
+
+  // Prompt user to enter name of file to be removed.
+  print(4,
+	"* ",
+	"Enter Name of File to Remove",
+	" *",
+	">> ");
+  scanf("%s", to_delete);
+
+  DIR *current_dir = opendir("."); // Opens path to current directory.
+
+  // If the directory cannot be accessed, print an error message.
+  if (current_dir == NULL) {
+    print(3,
+	  "* ",
+	  "Could Not Read Directory",
+	  " *");
+  }
+  // If the directory can be accessed, remove chosen file if present,
+  // otherwise print an error message.
+  else {
+    struct dirent *dir_entries; // dirent struct containing directory info.
+
+    // Iteratre through files in the current directory.
+    while ((dir_entries = readdir(current_dir)) != NULL) {
+      // If the file to be deleted is present, delete it.
+      if (strcmp(dir_entries->d_name, to_delete)) {
+	remove(to_delete);
+	print(3,
+	      "* ",
+	      "File Deleted Successfully",
+	      " *");
+	break;
+      }
+      else {
+	print(3,
+	      "* ",
+	      "File Not Found",
+	      " *");
+      }
+    }
+  }
+  
+  closedir(current_dir); // Closes path to current directory.
 }
 
 //  *****************************************************************************
@@ -166,10 +262,10 @@ void load_manual(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
   
   // Print message if sentinel entered (program will terminate).
   if (instruction == SENTINEL) {
-    printf("\n%s\n\n",
-	   "***               "
-	   "No program instructions entered"
-	   "                ***");
+    print(3,
+	  "* ",
+	  "No Program Instructions Entered",
+	  " *");
   }
 
   // Continue entering instructions until the sentinel value is entered.
@@ -198,10 +294,10 @@ void load_manual(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
   // Print appropriate message if instructions were entered *before* the 
   // sentinel value was input.
   if (location_number != 0) {
-  printf("\n%s\n",
-	 "***          "
-	 "Program instructions entered successfully."
-	 "          ***");
+    print(3,
+	  "* ",
+	  "Program Instructions Entered Successfully",
+	  " *");
   }
 }
 
@@ -214,9 +310,11 @@ void load_file(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
   char loaded_file[FILE_LENGTH]; // Name of file program loaded from.
 
   // Prompt user to enter file name.
-  printf("%s%s\n%s", "***                -Enter name of file to load-",
-	 "                  ***",
-	 "                              >> ");
+  print(4,
+	"* ",
+	"Enter Name of File to Load",
+	" *",
+	">> ");
   scanf("%s", loaded_file);
 
   // Open file chosen by user (read mode "r+").
@@ -234,7 +332,7 @@ void load_file(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
       
     for (size_t i = 0; i < MEMORY_SIZE; i++) {
       fscanf(load_ptr, "%8s", ignore_string);
-      fscanf(load_ptr, "%X", &memory[i]); // Load instruction to memory.
+      fscanf(load_ptr, "%6X", &memory[i]); // Load instruction to memory.
 
       // Ignore newline at the end of each line of instructions.
       if ((i + 1) % 5 == 0) {
@@ -242,15 +340,33 @@ void load_file(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
       }
     }
 
-    // Extract and store the number of instructions saved.
-    fscanf(load_ptr, "%d", instruction_counter_ptr);
+    //    Extract and store the number of instructions saved.
+    char catch[13];
+    char pr_char;
+
+    /* for (unsigned int i = 0; i < MEMORY_SIZE; i++) { */
+    /*   fscanf(load_ptr, "%s", catch); */
+    /* } */
+    rewind(load_ptr);
     
+    for (unsigned int i = 0; i < 87 * 200 - 117 - 253 + 17 + 68 * 6; i++) {
+      fscanf(load_ptr, "%c", &pr_char);
+    }   
+    for (unsigned int i = 0; i < 52; i++) {
+      printf("%c", pr_char);
+      fscanf(load_ptr, "%c", &pr_char);
+    }   
+    
+    puts("");
     fclose(load_ptr); // Close file 'loaded_file'.
   }
   // If file 'loaded_file' cannot be opened, print error message.
   else {
-    printf("%s%s%s\n", "XXX Program file \"", loaded_file,
-	   "\" could not be opened. XXX");
+    print(4,
+	  "* ",
+	  "Program File Could Not Be Opened",
+	  " *");
+  }
 }
 
 //  *****************************************************************************
@@ -263,9 +379,11 @@ void save_file(int memory[MEMORY_SIZE], char* register_string,
   char saved_file[FILE_LENGTH]; // Name of file program saved to.
   
   // Prompt user to enter file name.
-  printf("%s%s\n%s", "***                   -Enter name for saved file-",
-	 "                ***",
-	 "                              >> ");
+  print(4,
+	"* ",
+	"Enter Name for Saved File",
+	" *",
+	">> ");
   scanf("%s", saved_file);
 
   // Open file 'saved_file' for writing (write mode "w+").
@@ -319,8 +437,14 @@ void save_file(int memory[MEMORY_SIZE], char* register_string,
   }
   // If file 'saved_file' cannot be opened, print error message.
   else {
-    printf("%s%s%s\n", "XXX Program file \"", saved_file,
-	   "\" could not be saved. XXX");
+    print(2,
+	  "* ",
+	  "Program File \'");
+    print(1,
+	  ">> ");
+    print(1, saved_file);
+    print(2,
+	  "Could Not Be Saved", " *");
   }
 }
 
@@ -331,11 +455,17 @@ void view_instructions(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
 {
   // If 'memory' is empty, print appropriate message.
   if (*instruction_counter_ptr == 0) {
-    printf("\n%-22s%s%21s\n", "*** ","-Simpletron Memory Empty-", " ***");    
+    print(3,
+	  "* ",
+	  "Simpletron Memory Empty",
+	  " *");
   }
   // If 'memory' contains instructions, print in formatted list.
   else {
-    printf("\n%-22s%s%21s\n\n", "*** ","-Current Instruction List-", " ***");
+    print(3,
+	  "* ",
+	  "Current Instruction List",
+	  " *");
   
     // Print until '*instruction_counter_ptr' instructions printed.
     for(size_t i = 0; i < *instruction_counter_ptr; i++) {
@@ -396,12 +526,13 @@ void edit_program(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
   unsigned int choice = 0;
   
   // Prompt user to enter editing choice.
-  printf("\n%-8s%s%8s\n%-11s%s%10s\n%-13s%s%13s\n%-8s%s%7s\n%s",
-	 "*", "Press 1 to view current list of edited instructions.", "*",
-	 "*", "Press 2 to insert/delete a new memory location.", "*",
-	 "*", "Press 3 to edit a current memory location.", "*",
-	 "*", "Press 0 to quit editing the current instruction list.", "*",
-	 "                              >> ");  
+  print(7, "* ",
+	"Press 1 to view current list of edited instructions.", 
+	"Press 2 to insert/delete a new memory location.",
+	"Press 3 to edit a current memory location.",
+	"Press 0 to quit editing the current instruction list.",
+	" *",
+	">> ");
   scanf("%d", &choice);
 
   unsigned int edit = 1; // Variable controls editing loop.
@@ -434,26 +565,31 @@ void edit_program(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
       view_instructions(temp_memory, &temp_counter);
 
       // Ask whether to add or delete a 'memory' location.
-      printf("\n%-21s%s%21s\n%-20s%s%19s\n%s",
-	     "*", "1 - Add a memory location.", "*",
-	     "*", "2 - Delete a memory location.", "*",
-	     "                              >> ");  
+      print(5,
+	    "* ",
+	    "1 - Add a Memory Location",
+	    "2 - Delete a Memory Location",
+	    " *",
+	    ">> ");
       scanf("%d", &add_delete);
-
       
       // If 'add_delete' = 1, prompt user to enter 'memory' location before
       // one to be added. Otherwise, prompt user to enter 'memory' location
       // to be deleted.
       if (add_delete == 1) {
-      printf("\n%-14s%s%15s\n%-22s%s%22s\n%s",
-	     "*", "Enter the 'memory' position immediately", "*",
-	     "*", "before the new location.", "*",
-	     "                              >> ");  
+	print(5,
+	      "* ",
+	      "Enter the 'memory' Postion Immediately",
+	      "Before the New Location",
+	      " *",
+	      ">> ");
       }
       else {
-      printf("\n%-13s%s%13s\n%s",
-	     "*", "Enter the 'memory' position to be deleted.", "*",
-	     "                              >> ");  	
+	print(4,
+	      "* ",
+	      "Enter the Memory Location to be Deleted",
+	      " *",
+	      ">> ");
       }
       scanf("%d", &location);
 
@@ -496,9 +632,10 @@ void edit_program(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
       
 	// Print confirmation that new location has been added, and print the new
 	// instruction list.
-	printf("%-26s%s%02X%s%13s\n",
-	       "*", "Memory location ",
-	       location, " deleted.", "*");
+	print(3,
+	      "* ",
+	      "Memory Location Deleted",
+	      " *");
       }
 
       // If a new 'memory' location was added before the current end of the
@@ -533,10 +670,12 @@ void edit_program(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
       view_instructions(temp_memory, &temp_counter);
       
       // Prompt user to enter the location of the instruction to be edited.
-      printf("\n%-15s%s%15s\n%-20s%s%19s\n%s",
-	     "*", "Enter the 'memory' location containing", "*",
-	     "*", "the instruction to be edited.", "*",
-	     "                              >> ");  	     
+      print(5,
+	    "* ",
+	    "Enter the 'memory' Location Containging",
+	    "the Instructions to be Edited",
+	    " *",
+	    ">> ");
       scanf("%d", &location);
 
       // Print instruction to be edited.
@@ -547,21 +686,31 @@ void edit_program(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
       int temp_location = temp_memory[location];
 
       // Prompt user for instruction.
-      printf("\n%-23s%s%23s\n", "*", "Enter new instruction:", "*");
+      print(3, "* ",
+	    "Enter New Instruction",
+	    " *");
       printf("%25s%03d%s", "", location, " +");
       scanf("%X", &temp_instruction);
 
       unsigned int confirm = 0; // Indicates whether user wants to commit edit.
-      printf("\n%-14s%s%15s\n%s", "*", "Press 1 to confirm change, 0 to cancel.", "*",
-	     "                              >> ");	     
+      print(5,
+	    "* ",
+	    "1 - Confirm",
+	    "2 - Cancel",
+	    "* ",
+	    ">> ");
       scanf("%d", &confirm);
 
       if (confirm == 1) {
 	temp_memory[location] = temp_instruction;
-	printf("%-27s%s%27s\n", "*", "Edit confirmed.", "*");	
+	print(3, "* ",
+	      "Edit Confirmed",
+	      " *");
       }
       else {
-	printf("%-27s%s%27s\n", "*", "Edit discared.", "*");
+	print(3, "* ",
+	      "Edit Discarded",
+	      " *");
       }
 
       // Print instruction list.
@@ -575,17 +724,20 @@ void edit_program(int memory[MEMORY_SIZE], int *instruction_counter_ptr)
     // If user has not quit (choice 0), continue editing.
     if (edit != 0) {
       // Prompt user to enter editing choice.
-      printf("\n%-8s%s%8s\n%-16s%s%12s\n%-13s%s%13s\n%-8s%s%7s\n%s",
-	     "*", "Press 1 to view current list of edited instructions.", "*",
-	     "*", "Press 2 to insert a new memory location.", "*",
-	     "*", "Press 3 to edit a current memory location.", "*",
-	     "*", "Press 0 to quit editing the current instruction list.", "*",
-	     "                              >> ");  
+  print(7, "* ",
+	"Press 1 to view current list of edited instructions.", 
+	"Press 2 to insert/delete a new memory location.",
+	"Press 3 to edit a current memory location.",
+	"Press 0 to quit editing the current instruction list.",
+	" *",
+	">> ");
       scanf("%d", &choice);
     }
   }
-  printf("\n%-20s%s%19s\n",
-	 "*", "Instruction editing complete.", "*");
+  print(3,
+	"* ",
+	"Instruction Editing Complete",
+	" *");
 }
 
 //  *****************************************************************************
@@ -610,7 +762,7 @@ void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
   terminate_ptr = &terminate;
 
   int toggle; // Controls whether instruction counter is incremented (should not
-              // be incremented if branch instruction is processed).  
+  // be incremented if branch instruction is processed).  
   int *toggle_ptr; // Pointer to variable 'toggle'.
   toggle_ptr = &toggle;
 
@@ -703,19 +855,19 @@ void print_registers(bool print_option, char* register_string,
 {
   // Save information for program registers to string 'register_string'.
   sprintf(register_string, "\n%s\n%s\n%s\n%s\n"
-	 "%-56s%s%04X%s\n%-56s%5.2X%s\n%-56s%s%4.4X%s\n%-56s%5.2X%s\n%-56s%5.2X"
-	 "%s\n%s\n%s\n\n",
-	 "********************************************************************",
-	 "***                           REGISTERS:                         ***",
-	 "********************************************************************",
-	 "***                                                              ***",
-  	 "***    accumulator", "+", *accumulator_ptr, "    ***",
-  	 "***    instruction_counter", *instruction_counter_ptr, "    ***",
-  	 "***    instruction_register", "+", *instruction_register_ptr,
-	 "    ***",
-  	 "***    operation_code", *operation_code_ptr, "    ***",
-  	 "***    operand", *operand_ptr, "    ***",
-	 "***                                                              ***",
+	  "%-56s%s%04X%s\n%-56s%5.2X%s\n%-56s%s%4.4X%s\n%-56s%5.2X%s\n%-56s%5.2X"
+	  "%s\n%s\n%s\n\n",
+	  "********************************************************************",
+	  "***                           REGISTERS:                         ***",
+	  "********************************************************************",
+	  "***                                                              ***",
+	  "***    accumulator", "+", *accumulator_ptr, "    ***",
+	  "***    instruction_counter", *instruction_counter_ptr, "    ***",
+	  "***    instruction_register", "+", *instruction_register_ptr,
+	  "    ***",
+	  "***    operation_code", *operation_code_ptr, "    ***",
+	  "***    operand", *operand_ptr, "    ***",
+	  "***                                                              ***",
 	  "********************************************************************");
   register_string[REGISTER_LENGTH - 1] = '\0';
 
@@ -738,9 +890,12 @@ void print_memory_dump(int memory[MEMORY_SIZE], char* dump_file)
 
   // Prompt user whether to print 'memory' dump from a file, or from the program
   // currenly loaded into 'memory'.
-  printf("%s\n%s\n\n",
-	 "1 - Print dump of program currently loaded in Simpletron memory.",
-	 "2 - Print dump from saved program.");
+  print(5,
+	"* ",
+	"1 - Print Dump of Program Currently Loaded in Simpletron Memory",
+	"2 - Print dump from Saved File",
+	"* ",
+	">> ");
   scanf("%d", &choice);
 
   // If user chooses '1', print from 'memory'. Otherwise print from file.
@@ -754,12 +909,14 @@ void print_memory_dump(int memory[MEMORY_SIZE], char* dump_file)
 
     // Print from file.
   case 2:
-      // If user chooses to print from file, prompt for file name. Otherwise,
+    // If user chooses to print from file, prompt for file name. Otherwise,
     // print from file just saved.
     if (choice == 2) {
-      printf("%s%s\n%s", "***                -Enter name for dump file-",
-	     "                    ***",
-	     "                              >> ");
+      print(4,
+	    "* ",
+	    "Enter Name for Dump File",
+	    " *",
+	    ">> ");
       scanf("%s", dump_file);
     }
     // Open file 'load_dump_file' for reading (write mode "r+").    
@@ -778,19 +935,28 @@ void print_memory_dump(int memory[MEMORY_SIZE], char* dump_file)
     }
     // If file 'dump_file' cannot be opened, print error message.      
     else {
-      printf("%s%s%s\n", "XXX Dump file \"", dump_file,
-	     "\" could not be printed. XXX");
+      print(2,
+	    "* ",
+	    "Dump File \'");
+      print(1,
+	    ">> ");
+      print(1, dump_file);
+      print(2,
+	    "Could Not Be Printed", " *");
     }
-       break;
+    break;
     // Prompt the user to input again if choice is invalid.
   default:
-    printf("\n%s\n\n",
-	   "XXX              "
-	   "Invalid choice. Please choose again."
-	   "            XXX");
-    printf("%s\n%s\n\n",
-	   "1 - Print dump of program currently loaded in Simpletron memory.",
-	   "2 - Print dump from saved program.");
+    print(3,
+	  "* ",
+	  "Invalid Choice. Please Choose Again.",
+	  " *");
+    print(5,
+	  "* ",
+	  "1 - Print Dump of Program Currently Loaded in Simpletron Memory",
+	  "2 - Print dump from Saved File",
+	  "* ",
+	  ">> ");
     scanf("%u", &choice);      
     break;
   }
@@ -825,9 +991,11 @@ void save_dump(int memory[MEMORY_SIZE], char* dump_file, bool print_option)
   }
   else {
     // Prompt user to enter file name.
-    printf("%s%s\n%s", "***                   -Enter name for dump file-",
-	   "                 ***",
-	   "                              >> ");
+    print(4,
+	  "* ",
+	  "Enter Name for Dump File",
+	  " *",
+	  ">> ");
     scanf("%s", dump_file);
   }
 
@@ -895,8 +1063,14 @@ void save_dump(int memory[MEMORY_SIZE], char* dump_file, bool print_option)
   }
   // If file 'dump_file' cannot be opened, print error message.      
   else {
-    printf("%s%s%s\n", "XXX Dump file \"", dump_file,
-	   "\" could not be saved. XXX");
+      print(2,
+	    "* ",
+	    "Dump File \'");
+      print(1,
+	    ">> ");
+      print(1, dump_file);
+      print(2,
+	    "Could Not Be Saved", " *");
   }
 }
 
@@ -905,34 +1079,32 @@ void save_dump(int memory[MEMORY_SIZE], char* dump_file, bool print_option)
 //  *****************************************************************************
 void print_welcome(void)
 {
-  printf("\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n"
-	 "%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
-	 "********************************************************************",
-	 "***                                                              ***",
-         "***        Welcome to 'Simpletron: The Computer Simulator'.      ***",
-	 "***      Simpletron simulates a computer by running programs     ***",
-	 "***         written in 'Simpletron Machine Language (SML),       ***",
-	 "***         loading instructions into Simpletron 'memory'.       ***",
-	 "***       You can enter programs manually with the keyboard,     ***",
-	 "***            or by loading a program stored in a file.         ***",
-	 "***                                                              ***",
-	 "***        Mode           Description                            ***",
-	 "***        ****           ***********                            ***",
-	 "***         01  -  View list of saved programs,                  ***",
-	 "***         02  -  Delete a program.                             ***",
-	 "***         03  -  Load program (manually).                      ***",
-	 "***         04  -  Load program (file).                          ***",
-	 "***         05  -  Save program to file.                         ***",
-	 "***         06  -  View loaded program instructions.             ***",
-	 "***         07  -  Edit loaded program.                          ***",
-	 "***         08  -  Run loaded program.                           ***",
-	 "***         09  -  Print register.                               ***",
-	 "***         10  -  Print Simpletron 'memory'.                    ***",
-	 "***         11  -  Print Simpletron dump ('memory' & registers). ***",
-	 "***         12  -  Save Simpletron dump to file.                 ***",
-	 "***         13  -  Quit 'Simpletron: The Computer Simulator'.    ***",
-	 "***                                                              ***",
-	 "********************************************************************");
+  print(24,
+	"* ",
+	"  Welcome to 'Simpletron: The Computer Simulator'   ",
+	"Simpletron simulates a computer by running programs ",
+	"   written in 'Simpletron Machine Language (SML),   ",
+	"   loading instructions into Simpletron 'memory'.   ",
+	" You can enter programs manually with the keyboard, ",
+	"     or by loading a program stored in a file.      ",
+	"                                                    ",
+	"Mode           Description                          ",
+	"****           ***********                          ",          
+	"01  -  View list of saved programs                  ",
+	"02  -  Delete a program                             ",                 
+	"03  -  Load program (manually)                      ",
+	"04  -  Load program (file)                          ",                       
+	"05  -  Save program to file                         ",                        
+	"06  -  View loaded program instructions             ",
+	"07  -  Edit loaded program                          ",
+	"08  -  Run loaded program                           ",                          
+	"09  -  Print register                               ",                           
+	"10  -  Print Simpletron 'memory                     ",
+	"11  -  Print Simpletron dump ('memory' & registers) ",
+	"12  -  Save Simpletron dump to file                 ",
+	"13  -  Quit 'Simpletron: The Computer Simulator'    ",
+	" *");
+	 
 }
 
 //  *****************************************************************************
@@ -940,15 +1112,13 @@ void print_welcome(void)
 //  *****************************************************************************
 void print_goodbye(void)
 {
-  printf("\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n\n",
-	 "********************************************************************",
-	 "***                                                              ***",
-	 "***                     Thank you for using                      ***",
-	 "***            'Simpletron: The Computer Simulator'.             ***",
-	 "***                                                              ***",
-	 "***                         Goodbye :-)                          ***",
-	 "***                                                              ***",
-	 "********************************************************************");
+  print(6,
+	"* ",
+	"Thank You for Using",
+	"'Simpletron: The Computer Simulator",
+	"",
+	"Goodbye :-)",
+	" *");
 }
 
 //  *****************************************************************************
@@ -961,7 +1131,7 @@ void print_entry_prompt(void)
 	 "***                                                              ***",
 	 "***   Please enter your program one instruction (or data word)   ***",
 	 "***   at a time. When you see the prompt '0-- +', please enter   ***",
-         "***         an instruction using an hexadecimal integer.         ***",
+	 "***         an instruction using an hexadecimal integer.         ***",
 	 "***   Type the sentinel ",
 	 SENTINEL,
 	 " to stop entering your program.  ***",
@@ -997,10 +1167,10 @@ void invalid_entry(int *instruction_ptr, int *location_number_ptr,
   // and prompt the user to re-enter an instruction (call enter_instruction).
   while ((*instruction_ptr < SENTINEL) || (SENTINEL > *instruction_ptr < -0XFFFF)
 	 || (*instruction_ptr > 0XFFFF)) {
-    printf("\n%s\n\n",
-	   "XXX        "
-	   " Invalid User Input. Enter valid instruction."
-	   "         XXX");
+    print(3,
+	  "* ",
+	  "Invalid User Input. Please Enter Valid Instruction",
+	  " *");
 
     // Decrement 'instruction_counter_ptr' to subtract the invalid instruction
     // from the count.
@@ -1011,40 +1181,6 @@ void invalid_entry(int *instruction_ptr, int *location_number_ptr,
 		      instruction_counter_ptr);
   }
 }  
-
-//  *****************************************************************************
-//  ***                         Colour Functions                              ***
-//  *****************************************************************************
-
-// Begin function 'red'
-void red(void)
-{ 
-  printf("\033[0;31m"); 
-}
-
-// Begin function 'blue'
-void blue(void)
-{
-  printf("\033[0;34m"); 
-}
-
-// Begin function 'green'
-void green(void)
-{
-  printf("\033[0;32m");
-}
-
-// Begin function 'yellow'
-void yellow(void)
-{
-  printf("\033[0;33m");  
-}
-
-// Begin function 'reset'
-void reset(void)
-{
-  printf("\033[0m");
-}
 
 // ******************************************************************************
 // **                                                                          **
