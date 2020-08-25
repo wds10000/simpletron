@@ -1,12 +1,12 @@
 //  *****************************************************************************
 //  *
-//  *    simple_source.c -- 
+//  *    simpletron.c -- 
 //  *    Author: Wade Shiell
 //  *    Date Created: Mon Aug 17 15:14:05 2020
 //  *
 //  *****************************************************************************
 
-#include "simple_header.h"
+#include "simpletron.h"
 
 //  *****************************************************************************
 //  ***                     Function 'run_simpletron'                         ***
@@ -20,13 +20,15 @@ void run_simpletron(char program_name[])
   int accum = 0; // Accumulator registry.
   int oprnd = 0; // Indicates the memory location currently operated on.
   int mem[MEMORY_SIZE] = {0}; // Array which simulates Simpletron memory.
-
+  int success = 0; // Indicates if program file was loaded successfully.
+  
   // Declare pointers.
   unsigned int *instr_reg_ptr;
   unsigned int *opern_cod_ptr;
   int *instr_cnt_ptr;
   int *accum_ptr;
   int *oprnd_ptr;
+  Print_Struct_Ptr prnt_strct_ptr = NULL;
   
   instr_reg_ptr = &instr_reg;
   opern_cod_ptr = &opern_cod;
@@ -34,18 +36,25 @@ void run_simpletron(char program_name[])
   accum_ptr = &accum;
   oprnd_ptr = &oprnd;
 
+
   // Load a program from file into memory.
-  load_file(mem, program_name, instr_cnt_ptr);
-  // Execute loaded program.
-  execute(mem, instr_reg_ptr, opern_cod_ptr,
-  	  instr_cnt_ptr, accum_ptr, oprnd_ptr);
+  success = load_file(mem, program_name, instr_cnt_ptr);
+
+  // If file was loaded successfully, execute loaded program.
+  if (success == 1) {
+    execute(mem, instr_reg_ptr, opern_cod_ptr,
+	    instr_cnt_ptr, accum_ptr, oprnd_ptr, &prnt_strct_ptr);
+  }
+
+  // Print output to screen and save to file.
+  print_output(&prnt_strct_ptr, program_name);
 }
 
 //  *****************************************************************************
 //  ***                     Function 'load_file'                              ***
 //  *****************************************************************************
-void load_file(int memory[MEMORY_SIZE], char program_name[],
-	       int *instruction_counter_ptr)
+int load_file(int memory[MEMORY_SIZE], char program_name[],
+	      int *instruction_counter_ptr)
 {
   FILE *load_ptr; // Pointer to file containing program instructions.
 
@@ -54,11 +63,14 @@ void load_file(int memory[MEMORY_SIZE], char program_name[],
     for (size_t i = 0; i < MEMORY_SIZE; i++) {
       fscanf(load_ptr, "%d\n", &memory[i]); // Load instruction to memory.
     } 
-    fclose(load_ptr); // Close file 'loaded_file'.
+    fclose(load_ptr); // Close file 'program_name'.
+    return 1;
   }
-  // If file 'loaded_file' cannot be opened, print error message.
+  // Open file chosen by user (read mode "r+").  
+  // If file 'program_name' cannot be opened, print error message.
   else {
-    printf("%s\n", "Program File Could Not Be Opened");
+    printf("%s\n", "Program File Could Not Be Opened.");
+    return 0;
   }
 }
 
@@ -67,24 +79,23 @@ void load_file(int memory[MEMORY_SIZE], char program_name[],
 //  *****************************************************************************
 void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
 	     unsigned int *operation_code_ptr, int *instruction_counter_ptr,
-	     int *accumulator_ptr, int *operand_ptr)
+	     int *accumulator_ptr, int *operand_ptr,
+	     Print_Struct_Ptr *print_struct_ptr)
 {
   // Reset 'instruction_counter' after a set of program instructions is
   // executed, otherwise the next set of instructions will not start from the
   // beginning of memory.
   *instruction_counter_ptr = 0;
-
   // Load instruction into 'instruction_register' and seperate it into
   // 'operation_code' and 'operand'.
   load_register(memory, instruction_counter_ptr, instruction_register_ptr,
 		operation_code_ptr, operand_ptr);
-
   int terminate = 0; // Variable to control when program execution stops.
   int *terminate_ptr; // Pointer to variable 'terminate'.
   terminate_ptr = &terminate;
 
   int toggle; // Controls whether instruction counter is incremented (should not
-  // be incremented if branch instruction is processed).  
+              // be incremented if branch instruction is processed).  
   int *toggle_ptr; // Pointer to variable 'toggle'.
   toggle_ptr = &toggle;
 
@@ -98,10 +109,10 @@ void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
     switch (*operation_code_ptr) {
 
     case 10: // 'read_instruction' function call.
-      read_instruction(memory, operand_ptr);
+      read_instruction(memory, operand_ptr, print_struct_ptr);
       break;
     case 11: // 'write_instruction' function call.
-      write_instruction(memory, operand_ptr);
+      write_instruction(memory, operand_ptr, print_struct_ptr);
       break;
     case 20: // 'load_instruction' function call.
       load_instruction(memory, operand_ptr, accumulator_ptr);
@@ -150,7 +161,6 @@ void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
     if (*toggle_ptr != 1) {
       (*instruction_counter_ptr)++;
     }
-
     // Load instruction into 'instruction_register' and seperate it into
     // 'operation_code' and 'operand'.
     load_register(memory, instruction_counter_ptr, instruction_register_ptr,
@@ -161,17 +171,30 @@ void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
 //  *****************************************************************************
 //  ***                     Function 'read_instruction'                       ***
 //  *****************************************************************************
-void read_instruction(int memory[MEMORY_SIZE], int *operand_ptr)
+void read_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+		      Print_Struct_Ptr *print_struct_ptr)
 {
+  // Print prompt and enter data.
+  printf("%-2c", '?');
   scanf("%d", &memory[*operand_ptr]);
+
+  // Pass prompt and data to 'add_struct_members' to faciliate printing.
+  char temp[3] = "? ";
+  add_struct_members(temp, memory[*operand_ptr], print_struct_ptr);
 }
 
 //  *****************************************************************************
 //  ***                     Function 'write_instruction'                      ***
 //  *****************************************************************************
-void write_instruction(int memory[MEMORY_SIZE], int *operand_ptr)
+void write_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+		       Print_Struct_Ptr *print_struct_ptr)
 {
-  printf("%d\n", memory[*operand_ptr]);
+  // Print prompt and  data.
+  printf("%-2c%d\n", '>', memory[*operand_ptr]);
+
+  char temp[3] = "> ";
+  // Pass prompt and data to 'add_struct_members' to faciliate printing.
+  add_struct_members(temp, memory[*operand_ptr], print_struct_ptr);
 }
 
 //  *****************************************************************************
@@ -217,8 +240,9 @@ void divide_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 			int *accumulator_ptr, int *terminate_ptr)
 {
   if (memory[*operand_ptr] == 0){
-    printf("%s\n",  "Attempt to Divide by Zero. "
-	   "Simpletron Execution Abnormally Terminated");
+    printf("%s\n%s\n",
+	   "Attempt to Divide by Zero. ",
+	   "Simpletron Execution Abnormally Terminated.");
     *terminate_ptr = 1;
   }
   else {
@@ -300,8 +324,9 @@ void halt_instruction(int *terminate_ptr)
 //  *****************************************************************************
 void default_instruction(int *terminate_ptr)
 {
-  printf("%s\n",  "Abnormal Instruction Detected"
-	 "Simpletron Execution Abnormally Terminated");
+  printf("%s\n%s\n",
+	 "Invalid Instruction Detected.",
+	 "Simpletron Execution Abnormally Terminated.");
   *terminate_ptr = 1;
 }
 
@@ -319,6 +344,87 @@ void load_register(int memory[MEMORY_SIZE], int *instruction_counter_ptr,
   // Hold operand instruction acts 
   *operand_ptr = *instruction_register_ptr % 100; 
 }
+
+//  *****************************************************************************
+//  ***                     Function 'add_struct_members'                     ***
+//  *****************************************************************************
+void add_struct_members(char prompt_member[], int value_member,
+			Print_Struct_Ptr *print_struct_ptr)
+{
+  // Use malloc to allocate memory to 'Print_Struct' object.
+  Print_Struct_Ptr new_struct_ptr = malloc(sizeof(Print_Struct));
+
+  // If memory was allocated, populate the struct.
+  if (new_struct_ptr != NULL) {
+    strcpy(new_struct_ptr->prompt, prompt_member);
+    new_struct_ptr->value = value_member;
+    new_struct_ptr->next_struct_ptr = NULL;
+
+    // If this struct points to another, reassign 'next_struct_ptr' and
+    // 'print_struct_ptr'.
+    if (new_struct_ptr->next_struct_ptr == NULL) {
+      new_struct_ptr->next_struct_ptr = *print_struct_ptr;
+      *print_struct_ptr = new_struct_ptr;
+    }
+  }
+  // If memory was not allocated, print error message.
+  else {
+    printf("%s\n", "Memory could not be allocated.");
+  }
+}
+
+//  *****************************************************************************
+//  ***                     Function 'print_output'                           ***
+//  *****************************************************************************
+void print_output(Print_Struct_Ptr *print_struct_ptr, char* program_name)
+{
+  FILE *output_ptr; // Pointer to file containing program output.
+  char output_file[100] = "(output)_"; // Name of the file output is saved to
+                                       // (add 5 so ".txt" & '\0' can be added).
+  int length = strlen(program_name); // Length of 'program_name'.
+
+  // Append 'program_name' to 'output_file'.
+  for (size_t i = 0; i < length; i++){
+    output_file[i + 9] = program_name[i];
+  }
+  
+  //Create output file (read mode "r+").
+  if ((output_ptr = fopen(output_file, "w+")) != NULL) {
+
+    //Iterate through 'print_array_ptr', print each element to 'output_file'.
+    print_struct(print_struct_ptr, output_ptr);
+    fclose(output_ptr); // Close 'output_file'.
+  }
+  // If file 'output_file' cannot be created, print error message.
+  else {
+    printf("%s\n", "Output File Could Not Be Created.");
+  }
+}
+
+//  *****************************************************************************
+//  ***                     Function 'print_struct'                           ***
+//  *****************************************************************************
+void print_struct(Print_Struct_Ptr *print_struct_ptr, FILE *file_ptr)
+{
+  // Use recursion to print the members of the list of structs to file in
+  // reverse order.
+
+  // If the current struct does not point to another, print it's members.
+  if ((*print_struct_ptr)->next_struct_ptr == NULL){
+    fprintf(file_ptr, "%s", (*print_struct_ptr)->prompt);
+    fprintf(file_ptr, "%d\n", (*print_struct_ptr)->value);
+  }
+  // If the current struct points to another, call 'print_struct' again and
+  // print the members of the current struct.
+  else {
+    Print_Struct_Ptr temp_ptr;
+    temp_ptr = (*print_struct_ptr)->next_struct_ptr;
+    print_struct(&temp_ptr, file_ptr);
+    fprintf(file_ptr, "%s", (*print_struct_ptr)->prompt);
+    fprintf(file_ptr, "%d\n", (*print_struct_ptr)->value);
+  }
+}
+
 // ******************************************************************************
 // **                                                                          **
 // **                            END FILE                                      **

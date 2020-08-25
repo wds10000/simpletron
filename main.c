@@ -6,11 +6,15 @@
 //  *
 //  *****************************************************************************
 
-#include "simple_header.h"
+#include "simpletron.h"
 
+//  *****************************************************************************
+//  ***                     Function 'main'                                   ***
+//  *****************************************************************************
 int main(int argc, char **argv)
 {
-  // Run 'Simpletron Machine Language' program.
+  // Pass command line argument indicating the file to be executed
+  // to 'run_simpletron'.
   run_simpletron(argv[1]);
 }
 

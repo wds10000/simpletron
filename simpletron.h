@@ -1,6 +1,6 @@
 //  *****************************************************************************
 //  *
-//  *    simple_header.h -- 
+//  *    simpletron.h -- 
 //  *    Author: Wade Shiell
 //  *    Date Created: Mon Aug 17 15:08:55 2020
 //  *
@@ -10,26 +10,40 @@
 #define SIMPLE_HEADER_H
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
-#define MEMORY_SIZE 1000 // Define size of Simpletron 'memory' 
+#define MEMORY_SIZE 1000 // Define size of Simpletron 'memory'
+
+// Holds variables to be passed to function 'print_output'.
+struct print_struct {
+  char prompt[3]; // Holds prompt string.
+  int value; // Holds value data.
+  struct print_struct *next_struct_ptr; // Points to next struct in the list.
+};
+
+typedef struct print_struct Print_Struct;
+typedef Print_Struct *Print_Struct_Ptr;
 
 // Runs Simpletron program on behalf of main.
 void run_simpletron(char program_name[]);
 
 // Load program from file.
-void load_file(int memory[MEMORY_SIZE], char file_name[],
-	       int *instruction_counter_ptr);
+int load_file(int memory[MEMORY_SIZE], char file_name[],
+	      int *instruction_counter_ptr);
 
 // Runs the instructions stored in Simpletron 'memory'.
 void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
 	     unsigned int *operation_code_ptr, int *instruction_counter_ptr,
-	     int *accumulator_ptr, int *operand_ptr) ;
+	     int *accumulator_ptr, int *operand_ptr, Print_Struct_Ptr *print_struct_ptr);
 
 // Reads an hexadecumal integer from the keyboard and stores in 'memory'.
-void read_instruction(int memory[MEMORY_SIZE], int *operand_ptr);
+void read_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+		      Print_Struct_Ptr *print_struct_ptr);
 
 // Writes an decimal integer from 'memory' and displays it on screen.
-void write_instruction(int memory[MEMORY_SIZE], int *operand_ptr);
+void write_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+		       Print_Struct_Ptr *print_struct_ptr);
 
 // Loads an instruction from 'memory' into the accumulator.
 void load_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
@@ -85,6 +99,16 @@ void default_instruction(int *terminate_ptr);
 void load_register(int memory[MEMORY_SIZE], int *instruction_counter_ptr,
 		   unsigned int *instruction_register_ptr,
 		   unsigned int *operation_code_ptr, int *operand_ptr);
+
+// Adds prompt and data to 'print_struct_ptr' members.
+void add_struct_members(char prompt_member[], int value_member,
+			Print_Struct_Ptr *print_struct_ptr);
+
+// Prints program output to file.
+void print_output(Print_Struct_Ptr *print_struct_ptr, char *program_name);
+
+// Iterates through a struct and prints entries in reverse order.
+void print_struct(Print_Struct_Ptr *print_struct_ptr, FILE *file_ptr);
 
 #endif
 

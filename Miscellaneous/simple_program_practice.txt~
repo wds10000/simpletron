@@ -1,0 +1,116 @@
+a) Input three integers, determine their average and print the result.
+
+   10	 rem print two integers, determine their average and print the result
+   40	 rem integers to be entered
+   42	 input i
+   44	 input j
+   46	 input k
+   50	 rem add three integers to total
+   52	 let t = i + j + k
+   60	 rem divide total by three to obtain average
+   62	 let a = t / 3
+   70	 rem print the result
+   72	 print a
+   99	 end
+
+b) Use a sentinel controlled loop to input ten integers, compute their sum and print the result.
+
+   10  	 rem use a sentinel controlled loop to input ten integers,
+   20  	 rem compute their sum and print the result
+   22  	 initialise total
+   24  	 let t = 0
+   26    rem set sentinel value
+   28  	 let s = -1
+   30    rem input integer
+   32  	 input i
+   34  	 rem add i to total
+   36  	 let t = t + i
+   38  	 keep adding integers until sentinel is input
+   40  	 if i != s goto 32
+   42  	 rem print total
+   44  	 print t
+   99  	 end
+
+c) Use a counter-controlled loop to input seven integers, some poitive and some negative, and
+   compute and print their average.
+
+   10	 rem use a counter-controlled loop to input seven integers, some poitive and some 
+   12	 rem negative, and compute and print their average
+   14	 rem initialise total t to zero
+   16	 let t = 0
+   18	 initialise average a to zero
+   20	 let a = 0
+   22	 initialise counter control m to zero
+   24	 let m = 0
+   26	 rem input integers and add them to total until m is equal to ten
+   28	 input i
+   30	 t = t + i
+   32	 let m = m + 1
+   34	 if m < 10 goto --
+   36	 calculate average
+   38	 let a = t / m
+   40	 print average
+   42	 print a
+   99	 end
+
+d) Input a series of integers and determine and print the largest. The first integer input
+   dictates how many numbers should be processed.
+
+   10	 rem input a series of integers and determine and print the largest
+   12	 rem the first integer input dictates how many numbers should be processed
+   14	 rem set the number of integers to be input
+   16	 input s
+   18	 rem initialise largest value to zero
+   20	 let m = 0
+   22	 rem initialise the iteration control variable
+   24	 let c = 0
+   26	 rem input integers until the first input number is reached
+   28	 input i
+   30	 rem compare i to m and assign m == i if i is bigger
+   32	 if m > i goto 36
+   34	 let m = i
+   36	 let c = c + 1
+   38	 if c < s goto 28
+   40	 rem print the largest of the integers input
+   42 	 print m
+   99	 end
+
+e) Input ten integers and print the smallest.
+
+   10	 rem input ten integers and print the smallest.
+   12	 rem set the number of integers to be input
+   14	 let s = 10
+   16	 rem initialise the iteration control variable
+   18	 let c = 1
+   20	 rem initialise smallest value to the first input number
+   22	 input i
+   24	 let m = i
+   26	 rem input integers until the iteration control variable is reached
+   28	 input j
+   30	 rem compare j to m and assign m == j if j is smaller
+   32	 if m < j goto 36
+   34	 let m = j
+   36	 let c = c + 1
+   38	 if c < s goto 28
+   40	 rem print the smallest of the integers input
+   42 	 print m
+   99	 end
+
+f) Calculate and print the sum of the even integers from 2 and 30.
+
+   10	 rem calculate and print the sum of the even integers from 2 and 30
+   12	 rem initialise sum to zero
+   14	 let s = 0
+   16	 rem set i equal to two
+   18	 let i = 2
+   20	 rem if i is even add it to sum
+   22	 if i % 2 != 0 goto --
+   24	 let s = s + i
+   26	 rem iterate through all integers until i is equal to 30
+   28	 let i = i + 1
+   30	 if i <= 30 goto --
+   32	 rem print the sum
+   34	 print s
+   99	 end
+
+g) 
