@@ -38,7 +38,7 @@ void run_simpletron(char program_name[])
 
 
   // Load a program from file into memory.
-  success = load_file(mem, program_name, instr_cnt_ptr);
+  success = load_file(mem, program_name, instr_cnt_ptr, &prnt_strct_ptr);
 
   // If file was loaded successfully, execute loaded program.
   if (success == 1) {
@@ -46,6 +46,11 @@ void run_simpletron(char program_name[])
 	    instr_cnt_ptr, accum_ptr, oprnd_ptr, &prnt_strct_ptr);
   }
 
+  // If an input file was not successfully loaded, assign 'no_input' to
+  // 'program_name'.
+  if (success == 0) {
+    program_name = "no_input.txt";
+  }
   // Print output to screen and save to file.
   print_output(&prnt_strct_ptr, program_name);
 }
@@ -53,8 +58,8 @@ void run_simpletron(char program_name[])
 //  *****************************************************************************
 //  ***                     Function 'load_file'                              ***
 //  *****************************************************************************
-int load_file(int memory[MEMORY_SIZE], char program_name[],
-	      int *instruction_counter_ptr)
+int load_file(int memory[], char program_name[],
+	      int *instruction_counter_ptr, Print_Struct_Ptr *print_struct_ptr)
 {
   FILE *load_ptr; // Pointer to file containing program instructions.
 
@@ -70,6 +75,11 @@ int load_file(int memory[MEMORY_SIZE], char program_name[],
   // If file 'program_name' cannot be opened, print error message.
   else {
     printf("%s\n", "Program File Could Not Be Opened.");
+
+    // Pass warning to 'add_struct_members' to faciliate printing.
+    char temp[PROMPT_LENGTH] = "Program Could Not Be Opened";
+    add_struct_members(temp, 99, print_struct_ptr);
+    
     return 0;
   }
 }
@@ -77,7 +87,7 @@ int load_file(int memory[MEMORY_SIZE], char program_name[],
 //  *****************************************************************************
 //  ***                     Function 'execute'                                ***
 //  *****************************************************************************
-void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
+void execute(int memory[], unsigned int *instruction_register_ptr,
 	     unsigned int *operation_code_ptr, int *instruction_counter_ptr,
 	     int *accumulator_ptr, int *operand_ptr,
 	     Print_Struct_Ptr *print_struct_ptr)
@@ -127,7 +137,8 @@ void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
       subtract_instruction(memory, operand_ptr, accumulator_ptr);
       break;
     case 32: // 'divide_instruction' function call.
-      divide_instruction(memory, operand_ptr, accumulator_ptr, terminate_ptr);
+      divide_instruction(memory, operand_ptr, accumulator_ptr, terminate_ptr,
+			 print_struct_ptr);
       break;
     case 33: // 'multiply_instruction' function call.
       multiply_instruction(memory, operand_ptr, accumulator_ptr);
@@ -153,7 +164,7 @@ void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
       halt_instruction(terminate_ptr);
       break;
     default: // 'default_instruction' function call.
-      default_instruction(terminate_ptr);
+      default_instruction(terminate_ptr, print_struct_ptr);
       break;
     }
 
@@ -171,7 +182,7 @@ void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
 //  *****************************************************************************
 //  ***                     Function 'read_instruction'                       ***
 //  *****************************************************************************
-void read_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void read_instruction(int memory[], int *operand_ptr,
 		      Print_Struct_Ptr *print_struct_ptr)
 {
   // Print prompt and enter data.
@@ -179,20 +190,20 @@ void read_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
   scanf("%d", &memory[*operand_ptr]);
 
   // Pass prompt and data to 'add_struct_members' to faciliate printing.
-  char temp[3] = "? ";
+  char temp[PROMPT_LENGTH] = "? ";
   add_struct_members(temp, memory[*operand_ptr], print_struct_ptr);
 }
 
 //  *****************************************************************************
 //  ***                     Function 'write_instruction'                      ***
 //  *****************************************************************************
-void write_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void write_instruction(int memory[], int *operand_ptr,
 		       Print_Struct_Ptr *print_struct_ptr)
 {
   // Print prompt and  data.
   printf("%-2c%d\n", '>', memory[*operand_ptr]);
 
-  char temp[3] = "> ";
+  char temp[PROMPT_LENGTH] = "> ";
   // Pass prompt and data to 'add_struct_members' to faciliate printing.
   add_struct_members(temp, memory[*operand_ptr], print_struct_ptr);
 }
@@ -200,7 +211,7 @@ void write_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 //  *****************************************************************************
 //  ***                     Function 'load_instruction'                       ***
 //  *****************************************************************************
-void load_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void load_instruction(int memory[], int *operand_ptr,
 		      int *accumulator_ptr)
 {
   *accumulator_ptr = memory[*operand_ptr];  
@@ -209,7 +220,7 @@ void load_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 //  *****************************************************************************
 //  ***                     Function 'store_instruction'                      ***
 //  *****************************************************************************
-void store_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void store_instruction(int memory[], int *operand_ptr,
 		       int *accumulator_ptr)
 {
   memory[*operand_ptr] = *accumulator_ptr;
@@ -218,7 +229,7 @@ void store_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 //  *****************************************************************************
 //  ***                     Function 'add_instruction'                        ***
 //  *****************************************************************************
-void add_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void add_instruction(int memory[], int *operand_ptr,
 		     int *accumulator_ptr)
 {
   *accumulator_ptr += memory[*operand_ptr];
@@ -227,7 +238,7 @@ void add_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 //  *****************************************************************************
 //  ***                  Function 'subtract_instruction'                      ***
 //  *****************************************************************************
-void subtract_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void subtract_instruction(int memory[], int *operand_ptr,
 			  int *accumulator_ptr)
 {
   *accumulator_ptr -= memory[*operand_ptr];
@@ -236,13 +247,20 @@ void subtract_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 //  *****************************************************************************
 //  ***                     Function 'divide_instruction'                     ***
 //  *****************************************************************************
-void divide_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
-			int *accumulator_ptr, int *terminate_ptr)
+void divide_instruction(int memory[], int *operand_ptr,
+			int *accumulator_ptr, int *terminate_ptr,
+			Print_Struct_Ptr *print_struct_ptr)
 {
   if (memory[*operand_ptr] == 0){
     printf("%s\n%s\n",
 	   "Attempt to Divide by Zero. ",
 	   "Simpletron Execution Abnormally Terminated.");
+
+    // Pass warning to 'add_struct_members' to faciliate printing.
+    char temp1[PROMPT_LENGTH] = "Attempt to Divide by Zero.\n";
+    add_struct_members(temp1, 99, print_struct_ptr);
+    char temp2[PROMPT_LENGTH] = "Simpletron Execution Abnormally Terminated.\n";
+    add_struct_members(temp2, 99, print_struct_ptr);
     *terminate_ptr = 1;
   }
   else {
@@ -253,7 +271,7 @@ void divide_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 //  *****************************************************************************
 //  ***                  Function 'multiply_instruction'                      ***
 //  *****************************************************************************
-void multiply_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void multiply_instruction(int memory[], int *operand_ptr,
 			  int *accumulator_ptr)
 {
   *accumulator_ptr *= memory[*operand_ptr];
@@ -262,7 +280,7 @@ void multiply_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 //  *****************************************************************************
 //  ***                  Function 'remainder_instruction'                     ***
 //  *****************************************************************************
-void remainder_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void remainder_instruction(int memory[], int *operand_ptr,
 			   int *accumulator_ptr)
 {
   *accumulator_ptr %= memory[*operand_ptr];
@@ -271,7 +289,7 @@ void remainder_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
 //  *****************************************************************************
 //  ***                Function 'exponentiation_instruction'                  ***
 //  *****************************************************************************
-void exponentiation_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void exponentiation_instruction(int memory[], int *operand_ptr,
 				int *accumulator_ptr)
 {
   *accumulator_ptr = pow(*accumulator_ptr, memory[*operand_ptr]);
@@ -322,18 +340,24 @@ void halt_instruction(int *terminate_ptr)
 //  *****************************************************************************
 //  ***                     Function 'default_instruction'                    ***
 //  *****************************************************************************
-void default_instruction(int *terminate_ptr)
+void default_instruction(int *terminate_ptr, Print_Struct_Ptr *print_struct_ptr)
 {
   printf("%s\n%s\n",
 	 "Invalid Instruction Detected.",
 	 "Simpletron Execution Abnormally Terminated.");
+
+  // Pass warning to 'add_struct_members' to faciliate printing.
+  char temp1[PROMPT_LENGTH] = "Invalid Instruction Detected.\n";  
+  add_struct_members(temp1, 99, print_struct_ptr);
+  char temp2[PROMPT_LENGTH] = "Simpletron Execution Abnormally Terminated.\n";
+  add_struct_members(temp2, 99, print_struct_ptr);
   *terminate_ptr = 1;
 }
 
 //  *****************************************************************************
 //  ***                     Function 'load_register'                          ***
 //  *****************************************************************************
-void load_register(int memory[MEMORY_SIZE], int *instruction_counter_ptr,
+void load_register(int memory[], int *instruction_counter_ptr,
 		   unsigned int *instruction_register_ptr,
 		   unsigned int *operation_code_ptr, int *operand_ptr)
 {
@@ -383,7 +407,6 @@ void print_output(Print_Struct_Ptr *print_struct_ptr, char* program_name)
                                        // (add 5 so ".txt" & '\0' can be added).
   int length = strlen(program_name); // Length of 'program_name'.
 
-  // Append 'program_name' to 'output_file'.
   for (size_t i = 0; i < length; i++){
     output_file[i + 9] = program_name[i];
   }
@@ -412,7 +435,11 @@ void print_struct(Print_Struct_Ptr *print_struct_ptr, FILE *file_ptr)
   // If the current struct does not point to another, print it's members.
   if ((*print_struct_ptr)->next_struct_ptr == NULL){
     fprintf(file_ptr, "%s", (*print_struct_ptr)->prompt);
-    fprintf(file_ptr, "%d\n", (*print_struct_ptr)->value);
+
+    // Don't print the value member of the struct if = 99.
+    if ((*print_struct_ptr)->value != 99) {
+      fprintf(file_ptr, "%d\n", (*print_struct_ptr)->value);
+    }
   }
   // If the current struct points to another, call 'print_struct' again and
   // print the members of the current struct.
@@ -421,7 +448,11 @@ void print_struct(Print_Struct_Ptr *print_struct_ptr, FILE *file_ptr)
     temp_ptr = (*print_struct_ptr)->next_struct_ptr;
     print_struct(&temp_ptr, file_ptr);
     fprintf(file_ptr, "%s", (*print_struct_ptr)->prompt);
-    fprintf(file_ptr, "%d\n", (*print_struct_ptr)->value);
+
+    // Don't print the value member of the struct if = 99.
+    if ((*print_struct_ptr)->value != 99) {
+      fprintf(file_ptr, "%d\n", (*print_struct_ptr)->value);
+    }
   }
 }
 

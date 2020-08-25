@@ -14,10 +14,11 @@
 #include <string.h>
 #include <math.h>
 #define MEMORY_SIZE 1000 // Define size of Simpletron 'memory'
+#define PROMPT_LENGTH 50 // Number of characters stored in 'prompt[]'.
 
 // Holds variables to be passed to function 'print_output'.
 struct print_struct {
-  char prompt[3]; // Holds prompt string.
+  char prompt[PROMPT_LENGTH]; // Holds prompt string.
   int value; // Holds value data.
   struct print_struct *next_struct_ptr; // Points to next struct in the list.
 };
@@ -29,52 +30,53 @@ typedef Print_Struct *Print_Struct_Ptr;
 void run_simpletron(char program_name[]);
 
 // Load program from file.
-int load_file(int memory[MEMORY_SIZE], char file_name[],
-	      int *instruction_counter_ptr);
+int load_file(int memory[], char file_name[],
+	      int *instruction_counter_ptr, Print_Struct_Ptr *print_struct_ptr);
 
 // Runs the instructions stored in Simpletron 'memory'.
-void execute(int memory[MEMORY_SIZE], unsigned int *instruction_register_ptr,
+void execute(int memory[], unsigned int *instruction_register_ptr,
 	     unsigned int *operation_code_ptr, int *instruction_counter_ptr,
 	     int *accumulator_ptr, int *operand_ptr, Print_Struct_Ptr *print_struct_ptr);
 
 // Reads an hexadecumal integer from the keyboard and stores in 'memory'.
-void read_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void read_instruction(int memory[], int *operand_ptr,
 		      Print_Struct_Ptr *print_struct_ptr);
 
 // Writes an decimal integer from 'memory' and displays it on screen.
-void write_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void write_instruction(int memory[], int *operand_ptr,
 		       Print_Struct_Ptr *print_struct_ptr);
 
 // Loads an instruction from 'memory' into the accumulator.
-void load_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void load_instruction(int memory[], int *operand_ptr,
 		      int *accumulator_ptr);
 
 // Stores an instruction in the accumulator in 'memory'.
-void store_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void store_instruction(int memory[], int *operand_ptr,
 		       int *accumulator_ptr);
 
 // Adds an instruction in 'memory' to the value in the accumulator.
-void add_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void add_instruction(int memory[], int *operand_ptr,
 		     int *accumulator_ptr);
 
 // Subtracts an instruction in 'memory' from the value in the accumulator.
-void subtract_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void subtract_instruction(int memory[], int *operand_ptr,
 			  int *accumulator_ptr);
 
 // Divides the value in the accumulator by a value from 'memory'.
-void divide_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
-			int *accumulator_ptr, int *terminate_ptr);
+void divide_instruction(int memory[], int *operand_ptr,
+			int *accumulator_ptr, int *terminate_ptr,
+			Print_Struct_Ptr *print_struct_ptr);
 
 // Multiplies a value from 'memory' by the value in the accumulator.
-void multiply_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void multiply_instruction(int memory[], int *operand_ptr,
 			  int *accumulator_ptr);
 
 // Gives the remainder of the accumulator value divided by 'memory' value.
-void remainder_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void remainder_instruction(int memory[], int *operand_ptr,
 			   int *accumulator_ptr);
 
 // Raises the value in the accumulator to value from 'memory'.
-void exponentiation_instruction(int memory[MEMORY_SIZE], int *operand_ptr,
+void exponentiation_instruction(int memory[], int *operand_ptr,
 				int *accumulator_ptr);
 
 // Branches to a 'memory' location.
@@ -93,10 +95,11 @@ void branchzero_instruction(int *accumulator_ptr, int *instruction_counter_ptr,
 void halt_instruction(int *terminate_ptr);
 
 // Terminates execution if an abnormal instruction is detected.
-void default_instruction(int *terminate_ptr);
+void default_instruction(int *terminate_ptr,
+			 Print_Struct_Ptr *print_struct_ptr);
 
 // Loads operation type and operand into 'instruction_register' and 'operand'.
-void load_register(int memory[MEMORY_SIZE], int *instruction_counter_ptr,
+void load_register(int memory[], int *instruction_counter_ptr,
 		   unsigned int *instruction_register_ptr,
 		   unsigned int *operation_code_ptr, int *operand_ptr);
 
