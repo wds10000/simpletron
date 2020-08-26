@@ -1,21 +1,18 @@
 //  *****************************************************************************
 //  *
-//  *    main.c -- 
+//  *    compiler.c -- Compiles programs written in 'simple'.
 //  *    Author: Wade Shiell
-//  *    Date Created: Sun Aug 16 16:46:21 2020
+//  *    Date Created: Wed Aug 26 10:21:03 2020
 //  *
 //  *****************************************************************************
 
-#include "simpletron.h"
+#include "simple_compiler.h"
 
-//  *****************************************************************************
-//  ***                     Function 'main'                                   ***
-//  *****************************************************************************
 int main(int argc, char **argv)
 {
-  // Pass command line argument indicating the file to be executed
-  // to 'run_simpletron'.
-  run_simpletron(argv[1]);
+  // Loads a 'simple' program file and compiles it to SML, then saves the
+  // resulting 'machine-ready' code to disk.
+  compile(argv[1]);
 }
 
 // ******************************************************************************
