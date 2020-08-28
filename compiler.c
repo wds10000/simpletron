@@ -10,8 +10,14 @@
 
 int main(int argc, char **argv)
 {
+  // Need to ignore line numbers unless they are the first token in a statement.
+  // Make sure that line numbers are saved in symbol table properly (ie. symbol).
+  // Don't increment instruction counter if the line is a remark.
+  // Clean out redundant parameters from function headers.
+  // Rename parameters and arguments as appropriate (currently they're the same).
+
   // Loads a 'simple' program file and compiles it to SML, then saves the
-  // resulting 'machine-ready' code to disk.
+  // resulting 'machine-ready' SML code to disk.
   compile(argv[1]);
 }
 

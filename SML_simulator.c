@@ -407,6 +407,7 @@ void print_output(Print_Struct_Ptr *print_struct_ptr, char* program_name)
                                        // (add 5 so ".txt" & '\0' can be added).
   int length = strlen(program_name); // Length of 'program_name'.
 
+  // Append 'program_name' to '(output)_".
   for (size_t i = 0; i < length; i++){
     output_file[i + 9] = program_name[i];
   }

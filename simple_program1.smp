@@ -1,0 +1,5 @@
+00 rem this is a test simple program
+01 rem enter an integer x
+02 input x
+03 rem end simple program
+99 end

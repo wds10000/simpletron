@@ -1,0 +1,11 @@
+00 rem this is a remark
+01 rem so is this
+02 input x
+03 let f = f + 1
+04 print x
+05 input y
+06 let u
+07 print y
+08 y
+09 input x
+10 if y == x goto 03
