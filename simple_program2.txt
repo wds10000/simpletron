@@ -1,5 +1,7 @@
-00 x 1
-01 y 2
-02 z 3
-03 a 4
-04 b 5
+00 rem input 2 integers and loop until x is not equal to y
+10 input x
+20 print x
+30 input y
+40 print y
+50 if x == y goto 70
+99 end

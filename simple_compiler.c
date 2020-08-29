@@ -120,6 +120,13 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
   unsigned int previous_counter; // Holds the last value of 'instruction_counter'.
   bool branch; // Indicates whether the current 'simple' statement is
                // a conditional statement.
+  bool go_to; // Indicates whether the current 'simple' statement is a
+              // conditional statement or a 'GOTO' statement.
+  bool less_equal; // Indicates whether 'token_value' == 'LESS_EQUAL'.
+  bool greater_equal; // Indicates whether 'token_value' == 'GREATER_EQUAL'.
+  unsigned int op1; // First operator of equality operator.
+  unsigned int op2; // Second operator of equality operator.
+  unsigned int temp; // Holds equality operator operand while swapping.
 
   unsigned int *table_index_ptr; // Pointer to 'table_index'.
   unsigned int *repeat_value_ptr; // Pointer to 'repeat_value'.
@@ -127,12 +134,29 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
   table_index_ptr = &table_index;
   repeat_value_ptr = &repeat_value;
   symbol_counter_ptr = &symbol_counter;
+
+
+  // ***************** vv COMMENT OUT TO SUPRESS PRINTING vv *******************
+
+  printf("\n\t\t\t\t%s\n\n\t\t\t\t%s\n\t\t\t\t%2c\t%2c\t%2c\n\t\t\t\t%s\n\n",
+	 "    Symbol Table",
+	 "*******************",
+	 'S', 'T', 'L',
+	 "*******************");
+
+  // ***************** ^^ COMMENT OUT TO SUPRESS PRINTING ^^ *******************
   
   // Iterate through the 'simple' statements in compiler memory & tokenise each.
   for (size_t i = 0; i < COMPILER_MEM_SIZE; i++) {
     statement_position = 0; // Reset statement_position position.
     token_position = 0; // Reset token position.
+    // Set initial values for conditional/GOTO variables.
     branch = false;
+    go_to = false;
+    less_equal = false;
+    greater_equal = false;
+    op1 = -1;
+    op2 = -1;
     
     // If 'compiler_memory' is empty, exit the for loop.
     if (!strcmp(compiler_memory[i], "(empty)")) {
@@ -148,48 +172,48 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
       // Assign 'token_value' according to the nature of the current token.
       token_value = compare_token(*tokenised_string, token_position, SML_memory,
 				  compiler_memory, symbol_table, flag,
-				  repeat_value_ptr, table_index_ptr);
+				  repeat_value_ptr, table_index_ptr, go_to);
 
-      // ******************** REMARK *******************************************
+      // ****************************** REMARK *********************************
       
       // If line is a remark, exit the loop.
       if (token_value == REMARK) {
       	break;
       }
 
-      // ******************** REPEATED CONSTANT/VARIABLE ***********************
+      // ********************* REPEATED CONSTANT/VARIABLE **********************
       
       // If the token is a repeated constant or variable, assign
       // 'repeat_value_ptr' to 'table_index_ptr'.
       if (token_value == -1 || token_value == -2 || token_value == -3) {
 	*table_index_ptr = *repeat_value_ptr;
       }
-
-      // ******************** POPULATE SYMBOL TABLE ****************************
+ 
+      // *********************** POPULATE SYMBOL TABLE *************************
       
       // Assign line numbers, constant and variables to 'symbol_table'.
       if (token_value == CONST) { // Assign constant to 'symbol_table'.
       	*table_index_ptr
 	  = add_symbol(token_value, *tokenised_string, symbol_table,
-		       symbol_counter_ptr);
+		       symbol_counter_ptr, go_to);
       }
       if (token_value == ZERO) { // Assign constant (zero) to 'symbol_table'.
 	*table_index_ptr
 	  = add_symbol(token_value, *tokenised_string, symbol_table,
-		       symbol_counter_ptr);
+		       symbol_counter_ptr, go_to);
       }
       if (token_value == VARIABLE) { // Assign variable to 'symbol_table'.
 	*table_index_ptr
 	  = add_symbol(token_value, *tokenised_string, symbol_table,
-		       symbol_counter_ptr);
+		       symbol_counter_ptr, go_to);
       }
       if (token_value == LINE) { // Assign line number to 'symbol_table'.
 	*table_index_ptr
 	  = add_symbol(token_value, *tokenised_string, symbol_table,
-		       symbol_counter_ptr);
+		       symbol_counter_ptr, go_to);
       }
 
-      // ******************** LOAD CONSTANT ************************************
+      // *************************** LOAD CONSTANT *****************************
       
       // If token is a constant, assign to SML memory.
       if (token_value == CONST || token_value == ZERO) {
@@ -198,7 +222,7 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	(*symbol_counter_ptr)++;
       }
 
-      // ******************** LOAD VARIABLE ************************************
+      // **************************** LOAD VARIABLE ****************************
       
       // If the token is a variable, assign to SML memory.
       if (token_value == VARIABLE) {
@@ -207,7 +231,7 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	(*symbol_counter_ptr)++;	
       }
  
-      // ******************** LOAD 'INPUT' INSTRUCTION *************************
+      // *********************** LOAD 'INPUT' INSTRUCTION **********************
       
       // If program asks for input, initialise 'READ' instruction.
       if (token_value == INPUT) {
@@ -223,7 +247,7 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	instruction_counter++;
       }    
 
-      // ******************** LOAD 'PRINT' INSTRUCTION *************************
+      // *********************** LOAD 'PRINT' INSTRUCTION **********************
       
       // If program outputs data, initialise 'WRITE' instruction.
       if (token_value == PRINT) {
@@ -239,94 +263,174 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	instruction_counter++;
       }
 
-      // ******************** CONDITIONAL STATEMENTS ***************************
+      // ************************ CONDITIONAL STATEMENTS ***********************
 
-      unsigned int temp1 = -1;
-      unsigned int temp2 = -1;      
-      unsigned int op1;
-      unsigned int op2;      
-      
-      // If the current statement is a goto instruction, set 'branch' = true.
+      // If the current statement is a conditonal-goto instruction,
+      // set 'branch' = true.
       if (token_value == IF) {
-	branch = true;
-
-	// Load operator code into 'LOAD' instruction.
-	SML_memory[instruction_counter] = 100 * LOAD;
-	instruction_counter++;
+    	branch = true;
       }
 
-      // Assign the memory addresses of the operands to 'temp1' & 'temp2'.
-      if (branch == true && (token_value == VARIABLE || token_value == -3)) {
+      // Assign the memory addresses of the operands to 'op1' & 'op2'.
+      if (branch == true) {
 
-	// Assign first variable in 'simple' statement to 'temp1'.
-	if (op1 == -1) {
-	  temp1 = symbol_table[*table_index_ptr].location;
+	if (token_value == VARIABLE || token_value == -3) {
+
+	  // Initialise 'LOAD' instruction & assign variable to 'op1'.
+	  if (op1 == -1) {
+	    // Initialise 'LOAD' instruction & increment 'instruction_counter'.
+	    SML_memory[instruction_counter] = 100 * LOAD;
+	    instruction_counter++;
+
+	    // Initialise 'SUBTRACT' instruction & increment 'instruction_counter'.
+	    SML_memory[instruction_counter] = 100 * SUBTRACT;
+	    instruction_counter++;
+
+	    // Assign first variable in 'simple' statement to 'op1'.
+	    op1 = symbol_table[*table_index_ptr].location;
+	  }
+	  // Assign first variable in 'simple' statement to 'op1'.
+	  else {
+	    op2 = symbol_table[*table_index_ptr].location;
+	  }
 	}
-	// Assign first variable in 'simple' statement to 'temp1'.
-	else {
-	  temp2 = symbol_table[*table_index_ptr].location;
-	}	  
-      }
 
-      // If the memory locations of both operands are stored in 'symbol_table',
-      // use a switch statement to determine which branch instructions to load.
-
-      // Load appropriate branch operator code into branch instruction.
+	// Initialise appropriate branch instruction.
 	switch (token_value) {
+
 	case LESS_THAN:
 	  // If value in accumulator is less than zero, branch.
 	  SML_memory[instruction_counter] = 100 * BRANCHNEG;
-	  // Load.
+	  break;
 	case LESS_EQUAL:
+	  less_equal = true; // Set true if 'token' == 'LESS_EQUAL'.
+
 	  // If value in accumulator is less than zero, branch.
 	  SML_memory[instruction_counter] = 100 * BRANCHNEG;
-	  // Load.
+	  instruction_counter++;
+	  
 	  // If value in accumulator is equal to zero, branch.
 	  SML_memory[instruction_counter] = 100 * BRANCHZERO;
-	  // Load.
+	  break;
 	case EQUAL:
 	  // If value in accumulator is equal to zero, branch.
 	  SML_memory[instruction_counter] = 100 * BRANCHZERO;
-	  // Load.
+	  break;
 	case GREATER_EQUAL:
-	  // Swap operands
-	  // If value in accumulator is less than zero, do not branch.
-	  SML_memory[instruction_counter] = 100 * BRANCHNEG;
-	  // Load.
-	case GREATER_THAN:
-	  // Swap operands
+	  greater_equal = true; // Set true if 'token' == 'GREATER_EQUAL'.
+
+	  // Swap operands, which turns 'GREATER_EQUAL' into 'LESS_EQUAL'.
+	  temp = op1;
+	  op1 = op2;
+	  op2 = temp;
+	    
 	  // If value in accumulator is less than zero, branch.
 	  SML_memory[instruction_counter] = 100 * BRANCHNEG;
-	  // Load.
-	  // Swap operands
-	  // If value in accumulator is equal to zero, do not branch.
+	  instruction_counter++;
+	  
+	  // If value in accumulator is equal to zero, branch.
 	  SML_memory[instruction_counter] = 100 * BRANCHZERO;
-	  // Load.
+	  break;
+	case GREATER_THAN:
+	  // Swap operands, which turns 'GREATER_THAN' into 'LESS_THAN'.
+	  temp = op1;
+	  op1 = op2;
+	  op2 = temp;
+	    
+	  // If value in accumulator is less than zero, branch.
+	  SML_memory[instruction_counter] = 100 * BRANCHNEG;
+	  break;
 	}
       }
       
-      // Load memory location of first operand into accumulator;
-      SML_memory[instruction_counter] += op1;
-      instruction_counter++;
-
-      // Load operator code into 'SUBTRACT' instruction.
-      SML_memory[instruction_counter - 1] = 100 * SUBTRACT;
-      instruction_counter++;
-
-      // Subtract memory location of second operand from accumulator.
-      SML_memory[instruction_counter - 1] += op2;
-      instruction_counter++;	
-	
-      // If 'token_value' ==  'GOTO', load operator code into 'BRANCH'
-      // instruction.
+      // If 'token_value' == 'GOTO', set 'go_to' == 'true'.
       if (token_value == GOTO) {
-	SML_memory[instruction_counter] = 100 * BRANCH;
-	
-	// Check for unresolved location before adding operand.
-	SML_memory[instruction_counter] += symbol_table[*table_index_ptr].location;
+	go_to = true;
       }
 
-      // ******************** END STATEMENT ************************************
+      // Add operand in SML memory to appropriate branch instruction(s).
+      if (go_to == true && token_value == LINE) {
+
+	// If 'branch' == 'true', add operand in SML memory to branch
+	// instruction(s) chosen in the switch statement above.
+	if (branch == true) {
+
+	  // If the equality operator is '<=' or '>=', add op1, op2 and memory
+	  // location of current line number to instructions at 'instruction_counter - 3',
+	  // 'instruction_counter -2', 'instruction_counter - 1' and 'instruction_counter'.
+	  if(less_equal == true || greater_equal == true) {
+	    // Add 'op1' to the 'LOAD' instruction.
+	    SML_memory[instruction_counter - 3] += op1;
+
+	    // Add 'op2' to the 'SUBTRACT' instruction.
+	    SML_memory[instruction_counter - 2] += op2;
+
+	    // If the line number after 'goto' is present in the symbol table, add
+	    // the SML memory location referred to by the line 'location' to the branch
+	    // instruction. Else, add the line number to the element of 'flag' with the
+	    // same index as 'symbol_table'.
+	    if (search_table(symbol_table, LINE, *tokenised_string)) {
+	      // Add memory location of current line number to first branch instruction.
+	      SML_memory[instruction_counter] += symbol_table[*repeat_value_ptr].location;
+	    }
+	    else {
+	      flag[*repeat_value_ptr] = atoi(*tokenised_string);
+	    }
+	    instruction_counter++;
+
+	    // If the line number after 'goto' is present in the symbol table, add
+	    // the SML memory location referred to by the line 'location' to the branch
+	    // instruction. Else, add the line number to the element of 'flag' with the
+	    // same index as 'symbol_table'.
+	    if (search_table(symbol_table, LINE, *tokenised_string)) {	    
+	      // Add memory location of current line number to second branch instruction.
+	      SML_memory[instruction_counter] += symbol_table[*repeat_value_ptr].location;
+	    }
+	    else {
+	      flag[*repeat_value_ptr] = atoi(*tokenised_string);
+	    }
+	    instruction_counter++;
+	  }
+	  else {
+	    // Add 'op1' to the 'LOAD' instruction.
+	    SML_memory[instruction_counter - 2] += op1;
+
+	    // Add 'op2' to the 'SUBTRACT' instruction.
+	    SML_memory[instruction_counter - 1] += op2;
+
+	    // If the line number after 'goto' is present in the symbol table, add
+	    // the SML memory location referred to by the line 'location' to the branch
+	    // instruction. Else, add the line number to the element of 'flag' with the
+	    // same index as 'symbol_table'.
+	    if (search_table(symbol_table, LINE, *tokenised_string)) {	    
+	      SML_memory[instruction_counter] += symbol_table[*repeat_value_ptr].location;
+	    }
+	    else {
+	      flag[*repeat_value_ptr] = atoi(*tokenised_string);	     
+	    }
+	    instruction_counter++;	    
+	  }
+	}
+	else {
+	  // Initialise 'BRANCH' instruction, then add operand in SML memory.
+	  SML_memory[instruction_counter] = 100 * BRANCH;
+
+	  // If the line number after 'goto' is present in the symbol table, add
+	  // the SML memory location referred to by the line 'location' to 'BRANCH'
+	  // instruction. Else, add the line number to the element of 'flag' with the
+	  // same index as 'symbol_table'.
+	  if (search_table(symbol_table, LINE, *tokenised_string)) {	  
+	    SML_memory[instruction_counter] += symbol_table[*repeat_value_ptr].location;
+	  }
+	  else {
+	    flag[*repeat_value_ptr] = atoi(*tokenised_string);
+	  }
+	  instruction_counter++;
+	}
+      }
+
+
+      // *************************** END STATEMENT *****************************
 
       // If program terminates, assign 'HALT' instruction to SML memory.
       if (token_value == END) {
@@ -343,37 +447,72 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
     } 
   }
 
-  // *************** DELETE ***************************************
+  // ***************** vv COMMENT OUT TO SUPRESS PRINTING vv *******************
+
+  printf("\n\t\t\t\t%s\n\n", "    Memory Dump");
+
+  for (unsigned int i = 0; i < 83; i++) {
+    printf("%s", "*");
+  }
+  printf("\n%c", '\t');
+
+  for (unsigned int i = 0; i < 10; i++) {
+    printf("%2d\t", i);
+  }
+  puts("");
+
+  for (unsigned int i = 0; i < 83; i++) {
+    printf("%s", "*");
+  }
+  puts("");
+
+  /* for (size_t i = 0; i < SML_MEM_SIZE; i++) { */
+
+  /*   printf("%d ", flag[i]); */
+    
+  /*   if ((i + 1) % 10 == 0) { */
+  /*     puts(""); */
+  /*   } */
+  /* } */
+
   for (size_t i = 0; i < SML_MEM_SIZE; i++) {
+
+    if (i % 10 == 0) {
+      printf("  %ld%s", i / 10, " | ");
+    }
+
     if (SML_memory[i] >= 97 && SML_memory[i] <= 122) {
-      printf("%c\t", SML_memory[i]);
+      printf("\t %c", SML_memory[i]);
     }
     else {
-      printf("%d\t", SML_memory[i]);
+      printf("\t %d", SML_memory[i]);
     }
     if ((i + 1) % 10 == 0) {
       puts("");
     }
   }
+
   /* for (size_t i = 0; i < SML_MEM_SIZE; i++) { */
   /*   if (symbol_table[i].symbol >= 97 && symbol_table[i].symbol <= 122) { */
-  /*     printf("%c\t", symbol_table[i].symbol); */
+  /*     printf("\t %c", symbol_table[i].symbol); */
   /*   } */
   /*   else { */
-  /*     printf("%d\t", symbol_table[i].symbol); */
+  /*     printf("\t %d", symbol_table[i].symbol); */
   /*   } */
   /*   if ((i + 1) % 10 == 0) { */
   /*     puts(""); */
   /*   } */
   /* } */
   /* puts(""); */
+
   /* for (size_t i = 0; i < SML_MEM_SIZE; i++) { */
-  /*     printf("%d\t", symbol_table[i].location); */
+  /*     printf("\t %d", symbol_table[i].location); */
   /*   if ((i + 1) % 10 == 0) { */
   /*     puts(""); */
   /*   } */
   /* } */
-  // *************** DELETE ***************************************  
+
+  // ***************** ^^ COMMENT OUT TO SUPRESS PRINTING ^^ *******************
 }
 
 // ******************************************************************************
@@ -429,7 +568,7 @@ unsigned int compare_token(char *token, unsigned int token_position,
 			   unsigned int SML_memory[], char *compiler_memory[],
 			   Symbols symbol_table[], int flag[],
 			   unsigned int *repeat_value_ptr,
-			   unsigned int *table_index_ptr)
+			   unsigned int *table_index_ptr, bool go_to)
 {  
   // ****************************************************************************
   // Need to clean out reduntant paramenters from function header
@@ -442,31 +581,37 @@ unsigned int compare_token(char *token, unsigned int token_position,
     return REMARK;  
   }
   else if (token_position != 0) { // If token is a constant.
-    if (atoi(token)) { // If the token is a number other than 0.
-      // Search table for 'token'.
-      if (!(*repeat_value_ptr = search_table(symbol_table, 0, token))) {
-	// If present, return CONST.
-	return CONST;
+    if (go_to == false) { // If token is not a line number following 'goto'.
+      if (atoi(token)) { // If the token is a number other than 0.
+	// Search table for 'token'.
+	if (!(*repeat_value_ptr = search_table(symbol_table, CONST, token))) {
+	  // If present, return CONST.
+	  return CONST;
+	}
+	else {
+	  return -1 * CONST; // If symbol present in table, return -1.
+	}
       }
-      else {
-	return -1 * CONST; // If symbol present in table, return -1.
+      if (!strcmp(token, "0")) { // If the token is 0.
+	// Search table for 'token'.
+	if (!(*repeat_value_ptr = search_table(symbol_table, ZERO, token))) {
+	  // If present, return ZERO.
+	  return ZERO;
+	}
+	else {
+	  return -1 * ZERO; // If symbol present in table, return -1.
+	}
       }
     }
-    if (!strcmp(token, "0")) { // If the token is 0.
-      // Search table for 'token'.
-      if (!(*repeat_value_ptr = search_table(symbol_table, 1, token))) {
-	// If present, return ZERO.
-	return ZERO;
-      }
-      else {
-	return -1 * ZERO; // If symbol present in table, return -1.
-      }
+    else {
+      *repeat_value_ptr = search_table(symbol_table, LINE, token);
+      return LINE;
     }
   }
   if (strlen(token) == 1) { // If token is a variable (ie. alphabetic character).
     if (*token >= 97 && *token <= 122) {
       // Search table for 'token'.
-      if (!(*repeat_value_ptr = search_table(symbol_table, 2, token))) {
+      if (!(*repeat_value_ptr = search_table(symbol_table, VARIABLE, token))) {
 	// If present, return VARIABLE.
 	return VARIABLE;
       }
@@ -477,7 +622,7 @@ unsigned int compare_token(char *token, unsigned int token_position,
   }
   if (token_position == 0) { // If token is a line number.
     // Search table for 'token'.
-    if (!(*repeat_value_ptr = search_table(symbol_table, 3, token))) {
+    if (!(*repeat_value_ptr = search_table(symbol_table, LINE, token))) {
       // If present, return LINE.
       return LINE;
     }
@@ -533,30 +678,30 @@ unsigned int search_table(Symbols symbol_table[], unsigned int symbol_code,
   unsigned int count = 0; // Controls search iteration.
 
   // Iterate through the symbol table. If the symbol is present, return 0. If
-  // it is not present, retun 1.
+  // it is not present, retun count.
   while (count < SYMBOL_SIZE) {
 
     switch (symbol_code) {
       
-    case 0: // If the symbol is a constant.
+    case 1: // If the symbol is a constant.
       if (symbol_table[count].type == 'C') {
 	if (atoi(token) == symbol_table[count].symbol) {
 	  return count;
 	}
       }
       break;
-    case 1: // If the symbol is a constant (0).
+    case 2: // If the symbol is a constant (0).
       if (0 == symbol_table[count].symbol && 'C' == symbol_table[count].type) {
 	/* return symbol_table[count].location; */
 	return count;
       }
       break;
-    case 2: // If the symbol is a variable (alphabetic character constant).
+    case 3: // If the symbol is a variable (alphabetic character constant).
       if (token[0] == symbol_table[count].symbol) {
 	return count;
       }
       break;
-    case 3: // If the symbol is a line number.
+    case 4: // If the symbol is a line number.
       if (symbol_table[count].type == 'L') {
 	if (atoi(token) == symbol_table[count].symbol) {
 	  return count;
@@ -573,7 +718,8 @@ unsigned int search_table(Symbols symbol_table[], unsigned int symbol_code,
 // *                             Function 'add_symbol'                          *
 // ******************************************************************************
 unsigned int add_symbol(unsigned int token_value, char *token,
-			Symbols symbol_table[], unsigned int *symbol_counter_ptr)
+			Symbols symbol_table[], unsigned int *symbol_counter_ptr,
+			bool go_to)
 {
   unsigned int count; // Variable iterates through 'symbol_table'.
 
@@ -608,39 +754,45 @@ unsigned int add_symbol(unsigned int token_value, char *token,
 	
       if (token_value == LINE) { // If the token is a line number.
 
-	if (!strcmp(token, "00")){ // If line number is '00'.
-	  symbol_table[count].symbol = 00; // Assign variable to this element.
-	}
+	if (go_to == false) { // Don't add if line follows 'GOTO' keyword.
+
+	  if (!strcmp(token, "00")){ // If line number is '00'.
+	    symbol_table[count].symbol = 00; // Assign variable to this element.
+	  }
 	  
-	else { // Otherwise, use atoi to assign token to element.
-	  symbol_table[count].symbol = atoi(token); // Assign variable to element.
+	  else { // Otherwise, use atoi to assign token to element.
+	    symbol_table[count].symbol = atoi(token); // Assign variable to element.
+	  }
+	  symbol_table[count].type = 'L'; 
+	  symbol_table[count].location = count - *symbol_counter_ptr;
+	  symbol_table[count].is_empty = false; // Element is occupied.
+	  break;
 	}
-	symbol_table[count].type = 'L'; 
-	symbol_table[count].location = count - *symbol_counter_ptr;
-	symbol_table[count].is_empty = false; // Element is occupied.
-	break;
+	else {
+	  return count;
+	}
       }
     }
   }
 
-  // ********************** DELETE *********************************************
-  
+  // ***************** vv COMMENT OUT TO SUPRESS PRINTING vv *******************
+
   if (token_value == VARIABLE) {
-    printf("%c\t%c\t%d\n", (char) symbol_table[count].symbol, symbol_table[count].type,
+    printf("\t\t\t\t%2c\t%2c\t%02d\n", (char) symbol_table[count].symbol, symbol_table[count].type,
   	   symbol_table[count].location);
     
   }
   else if (symbol_table[count].symbol != '0') {
-    printf("%d\t%c\t%d\n", symbol_table[count].symbol, symbol_table[count].type,
+    printf("\t\t\t\t%2d\t%2c\t%02d\n", symbol_table[count].symbol, symbol_table[count].type,
   	   symbol_table[count].location);
   }
   else {
-    printf("%c\t%c\t%d\n", symbol_table[count].symbol, symbol_table[count].type,
+    printf("\t\t\t\t%2c\t%2c\t%02d\n", symbol_table[count].symbol, symbol_table[count].type,
   	   symbol_table[count].location);
   }
 
-  // ********************** DELETE *********************************************
-  
+  // ***************** ^^ COMMENT OUT TO SUPRESS PRINTING ^^ *******************
+
   return count;
 }
 
@@ -706,24 +858,3 @@ void evaluate_postfix(void)
 // **                            END FILE                                      **
 // **                                                                          **
 // ******************************************************************************
-
-/* // If the token indicates an assignment, */
-/* if (token_value == LET) { */
-/* 	; */
-/* } */
-
-/* // If the token indicates a branch statement, */
-/* if (token_value == IF) { */
-/* 	; */
-/* } */
-
-/* // Branch to line XX. */
-/* if (token_value == GOTO) { */
-/* 	; */
-/* } */
-      
-/* // End program execution. */
-/* if (token_value == END) { */
-/* 	; */
-/* } */
-

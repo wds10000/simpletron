@@ -103,7 +103,7 @@ unsigned int compare_token(char *token, unsigned int token_position,
 			   unsigned int SML_memory[], char *compiler_memory[],
 			   Symbols symbol_table[], int flag[],
 			   unsigned int *memory_location_ptr,
-			   unsigned int *table_index_ptr);
+			   unsigned int *table_index_ptr, bool go_to);
 
 // Search symbol table. If symbol is found, return 1 otherwise return 0.
 unsigned int search_table(Symbols symbol_table[], unsigned int symbol_code,
@@ -111,7 +111,8 @@ unsigned int search_table(Symbols symbol_table[], unsigned int symbol_code,
 
 // Add the passed token to 'symbol_table' if not already added.
 unsigned int add_symbol(unsigned int token_value, char *token,
-			Symbols symbol_table[], unsigned int *symbol_counter);
+			Symbols symbol_table[], unsigned int *symbol_counter,
+			bool go_to);
 
 // Saves compiled 'SML' code to disk.
 void save_file(unsigned int SML_memory[], char simple_file[]);
