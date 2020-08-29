@@ -263,6 +263,10 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	instruction_counter++;
       }
 
+      // *********************** LOAD 'PRINT' INSTRUCTION **********************
+
+      
+
       // ************************ CONDITIONAL STATEMENTS ***********************
 
       // If the current statement is a conditonal-goto instruction,
@@ -373,8 +377,11 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	      // Add memory location of current line number to first branch instruction.
 	      SML_memory[instruction_counter] += symbol_table[*repeat_value_ptr].location;
 	    }
+	    // If the line number after 'goto' references a line ahead of the
+	    // current position, add the line number to the element 'flag'
+	    // corresponding to the same element in 'SML_memory'.
 	    else {
-	      flag[*repeat_value_ptr] = atoi(*tokenised_string);
+	      flag[instruction_counter] = atoi(*tokenised_string);	     
 	    }
 	    instruction_counter++;
 
@@ -386,8 +393,11 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	      // Add memory location of current line number to second branch instruction.
 	      SML_memory[instruction_counter] += symbol_table[*repeat_value_ptr].location;
 	    }
+	    // If the line number after 'goto' references a line ahead of the
+	    // current position, add the line number to the element 'flag'
+	    // corresponding to the same element in 'SML_memory'.
 	    else {
-	      flag[*repeat_value_ptr] = atoi(*tokenised_string);
+	      flag[instruction_counter] = atoi(*tokenised_string);	     
 	    }
 	    instruction_counter++;
 	  }
@@ -405,8 +415,11 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	    if (search_table(symbol_table, LINE, *tokenised_string)) {	    
 	      SML_memory[instruction_counter] += symbol_table[*repeat_value_ptr].location;
 	    }
+	    // If the line number after 'goto' references a line ahead of the
+	    // current position, add the line number to the element 'flag'
+	    // corresponding to the same element in 'SML_memory'.
 	    else {
-	      flag[*repeat_value_ptr] = atoi(*tokenised_string);	     
+	      flag[instruction_counter] = atoi(*tokenised_string);	     
 	    }
 	    instruction_counter++;	    
 	  }
@@ -422,13 +435,15 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	  if (search_table(symbol_table, LINE, *tokenised_string)) {	  
 	    SML_memory[instruction_counter] += symbol_table[*repeat_value_ptr].location;
 	  }
+	  // If the line number after 'goto' references a line ahead of the
+	  // current position, add the line number to the element 'flag'
+	  // corresponding to the same element in 'SML_memory'.
 	  else {
-	    flag[*repeat_value_ptr] = atoi(*tokenised_string);
+	    flag[instruction_counter] = atoi(*tokenised_string);	     
 	  }
 	  instruction_counter++;
 	}
       }
-
 
       // *************************** END STATEMENT *****************************
 
@@ -446,12 +461,25 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
       token_position++;
     } 
   }
+}
 
+// ******************************************************************************
+// *                             Function 'second_pass'                         *
+// ******************************************************************************
+void second_pass(unsigned int SML_memory[], char *compiler_memory[],
+		 Symbols symbol_table[], int flag[], char simple_file[])
+{
+  // Replace unresolved references in SML memory.
+  replace_references(flag, SML_memory, symbol_table);
+  
+  // Save compiled 'SML' code to disk.
+  save_file(SML_memory, simple_file);
+  
   // ***************** vv COMMENT OUT TO SUPRESS PRINTING vv *******************
 
   printf("\n\t\t\t\t%s\n\n", "    Memory Dump");
 
-  for (unsigned int i = 0; i < 83; i++) {
+  for (unsigned int i = 0; i < 86; i++) {
     printf("%s", "*");
   }
   printf("\n%c", '\t');
@@ -461,20 +489,12 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
   }
   puts("");
 
-  for (unsigned int i = 0; i < 83; i++) {
+  for (unsigned int i = 0; i < 86; i++) {
     printf("%s", "*");
   }
   puts("");
 
-  /* for (size_t i = 0; i < SML_MEM_SIZE; i++) { */
-
-  /*   printf("%d ", flag[i]); */
-    
-  /*   if ((i + 1) % 10 == 0) { */
-  /*     puts(""); */
-  /*   } */
-  /* } */
-
+  /* // SML memory. */
   for (size_t i = 0; i < SML_MEM_SIZE; i++) {
 
     if (i % 10 == 0) {
@@ -492,6 +512,17 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
     }
   }
 
+  /* //  Flag array. */
+  /* for (size_t i = 0; i < SML_MEM_SIZE; i++) { */
+
+  /*   printf("%d ", flag[i]); */
+    
+  /*   if ((i + 1) % 10 == 0) { */
+  /*     puts(""); */
+  /*   } */
+  /* } */
+
+  // Symbol table.
   /* for (size_t i = 0; i < SML_MEM_SIZE; i++) { */
   /*   if (symbol_table[i].symbol >= 97 && symbol_table[i].symbol <= 122) { */
   /*     printf("\t %c", symbol_table[i].symbol); */
@@ -505,24 +536,7 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
   /* } */
   /* puts(""); */
 
-  /* for (size_t i = 0; i < SML_MEM_SIZE; i++) { */
-  /*     printf("\t %d", symbol_table[i].location); */
-  /*   if ((i + 1) % 10 == 0) { */
-  /*     puts(""); */
-  /*   } */
-  /* } */
-
   // ***************** ^^ COMMENT OUT TO SUPRESS PRINTING ^^ *******************
-}
-
-// ******************************************************************************
-// *                             Function 'second_pass'                         *
-// ******************************************************************************
-void second_pass(unsigned int SML_memory[], char *compiler_memory[],
-		 Symbols symbols_table[], int flag[], char simple_file[])
-{
-  // Save compiled 'SML' code to disk.
-  save_file(SML_memory, simple_file);
 }
 
 // ******************************************************************************
@@ -794,6 +808,33 @@ unsigned int add_symbol(unsigned int token_value, char *token,
   // ***************** ^^ COMMENT OUT TO SUPRESS PRINTING ^^ *******************
 
   return count;
+}
+
+// ******************************************************************************
+// *                         Function 'replace_references'                      *
+// ******************************************************************************
+void replace_references(int flag[], unsigned int SML_memory[],
+			Symbols symbol_table[])
+{
+  // Iterate through 'flag' and find any unresolved references (flag[i] != -1).
+  for (size_t i = 0; i < SML_MEM_SIZE; i++) {
+
+    // If an unresolved reference is found, iterate through 'symbol_table' until a symbol
+    // with a location matching the unresolved reference is found.
+    if (flag[i] != -1) {
+
+      for (size_t j = 0; j < SYMBOL_SIZE; j++) {
+
+	// If a match is found (and the symbol type is 'L'), add the location
+	// stored in the symbol's location to the instruction in 'SML_memory' with
+	// the same element number as the unresolved refernce in 'flag'.
+	if (symbol_table[j].symbol == flag[i] && symbol_table[j].type == 'L') {
+
+	  SML_memory[i] += symbol_table[j].location;
+	}	
+      }
+    }
+  }
 }
 
 // ******************************************************************************

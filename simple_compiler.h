@@ -114,6 +114,10 @@ unsigned int add_symbol(unsigned int token_value, char *token,
 			Symbols symbol_table[], unsigned int *symbol_counter,
 			bool go_to);
 
+// Search through 'flag' and replace any unresolved references in 'SML_memory'.
+void replace_references(int flag[], unsigned int SML_memory[],
+			Symbols symbol_table[]);
+
 // Saves compiled 'SML' code to disk.
 void save_file(unsigned int SML_memory[], char simple_file[]);
 

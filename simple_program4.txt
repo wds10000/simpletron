@@ -3,7 +3,5 @@
 20 print x
 30 input y
 40 print y
-50 if x == y goto 70
-60 input z
-70 print z
+50 if x == y goto 20
 99 end
