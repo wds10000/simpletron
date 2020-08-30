@@ -15,22 +15,23 @@ void convert_to_postfix(char infix[], char postfix[])
   /* puts("Test"); */
   unsigned int i = 0; // Current element index in 'infix'.
   unsigned int p = 0; // Current element index in 'postfix'.
-  unsigned int length = strlen(infix); // Length of 'postfix'.
   char a; // Current character in 'infix'.
 
   push(top_node_ptr, '('); // Push '(' onto the stack.
 
-  infix[length] = ')'; // Append ')' to 'infix'.
-  /* infix[length + 1] = '\0'; */
+  infix[strlen(infix)] = ')'; // Append ')' to 'infix'.
+  /* infix[strlen(infix) + 1] = '\0'; */
   
   // While the stack is not empty, read 'infix' from left to right.
   while (!is_empty(*top_node_ptr)) {
-    
-    a = infix[i]; // Current character in 'infix'.
-    
+
+    // If the current character is ' ', ignore it.
+    if (!isspace(a)) {
+      ;
+    }
     // If the current character in 'infix' is a digit, copy it to the next
     // element of 'postfix'.
-    if (isdigit(a)) {
+    else if (isdigit(a)) {
       postfix[p] = a;
       p++;
     }

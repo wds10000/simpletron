@@ -288,24 +288,21 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
       // If 'let' == 'true', 
       if (let == true) {
 
-	if (token_position >= 2) {
-	  if (token_position == 2) {
-	    strcpy(infix, *tokenised_string);
-	    strcat(infix, " ");
-	  }
-	  else {
-	    strcat(infix, *tokenised_string);
-	    strcat(infix, " ");
-	  }
+	// If the current token is at the beginning of the right side of the
+	// assignment statement, add the remaining tokens to 'infix'.
+	if (token_position >= 4) {
+	  strcat(infix, *tokenised_string);
+	  strcat(infix, " ");
 	}
 
+	// If the current token is the last in the 'simple' statement,
+	// call 'convert_to_postfix' and 'evaluate_postfix' to convert
+	// the right side of the assignment to postfix form, then
+	// evaluate it.
 	if (token_position == token_number - 1) {
-	  infix[strlen(infix) - 1] = '\0';
-	  /* puts(infix); */
+	  infix[strlen(infix)] = '\0';
+	  postfix[strlen(infix)] = '\0';
 
-	  /* printf("%ld\n", strlen(infix)); */
-	  postfix[strlen(infix) - 1] = '\0';
-	  /* printf("%ld\n", strlen(postfix)); */
 	  convert_to_postfix(infix, postfix);
 	  /* evaluate_postfix_expression(postfix); */	  
 	}	
