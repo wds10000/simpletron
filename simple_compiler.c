@@ -1,8 +1,7 @@
 //  *****************************************************************************
 //  *
-//  *    simple_compiler.c -- Source file for the functions called by
+//  *    simple_compiler.c -- Source file for the compiler functions called by
 //  *                         'compiler.c'.
-//  *    Author: Wade Shiell
 //  *    Date Created: Wed Aug 26 10:02:08 2020
 //  *
 //  *****************************************************************************
@@ -23,11 +22,10 @@ void compile(char simple_file[])
 
   // ****** Sort these out *****
   unsigned int data_counter = 0;
-  // ******                *****
+  // ***************************
   
   // Initialise the symbol table and flag array.
   initialise(compiler_memory, SML_memory, symbol_table, flag);
-
   // Load a 'simple' program into compiler memory.
   load_program(compiler_memory, simple_file);
   // Perform first pass on 'simple' statements saved in 'compiler_memory'.
@@ -111,13 +109,17 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 		unsigned int instruction_counter)
 {
   char **tokenised_string; // 'simple' statement to be tokenised.
+  char **temp_string; // Holds address of 'tokenised_string' temporarily.
+  char infix[STATEMENT_LENGTH]; // Holds an assignment statement in infix form.
+  char postfix[STATEMENT_LENGTH]; // Holds an assignment statement in postfix form.
+  unsigned int token_number; // Number of tokens in tokenised string.
   unsigned int token_value; // Indicates return value for 'compare_token'.
   unsigned int table_index = 0; // Position of element in symbol table.
   unsigned int token_position; // Position of token in string.
   unsigned int repeat_value; // Indicates a token has been repeated.
-  unsigned int statement_position; // Indicates whether token follows a keyword.
   unsigned int symbol_counter = 0; // Tracks number of constants and variables.
   unsigned int previous_counter; // Holds the last value of 'instruction_counter'.
+  bool let; // Indicates whether the current 'simple' statement is an assignment.
   bool branch; // Indicates whether the current 'simple' statement is
                // a conditional statement.
   bool go_to; // Indicates whether the current 'simple' statement is a
@@ -145,12 +147,15 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	 "*******************");
 
   // ***************** ^^ COMMENT OUT TO SUPRESS PRINTING ^^ *******************
-  
+
   // Iterate through the 'simple' statements in compiler memory & tokenise each.
   for (size_t i = 0; i < COMPILER_MEM_SIZE; i++) {
-    statement_position = 0; // Reset statement_position position.
+    memset(infix, STATEMENT_LENGTH, ' ');
+    memset(postfix, STATEMENT_LENGTH, ' ');
+    token_number = 0;
     token_position = 0; // Reset token position.
     // Set initial values for conditional/GOTO variables.
+    let = false;
     branch = false;
     go_to = false;
     less_equal = false;
@@ -166,6 +171,15 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
     // Tokenise 'compiler_memory[i]'
     tokenised_string = tokenise(tokenised_string, compiler_memory[i]);
 
+    // Determine number of tokens in the tokenised string.
+    temp_string = tokenised_string;
+
+    // Iterate through 'temp_string', counting the number of tokens.
+    while (*temp_string != NULL) {
+      token_number++; // Increment the number of tokens in the tokenised string.
+      temp_string++;
+    }
+    
     // Compare each token in the passed string to the various 'simple' keywords,
     // variables and constant in order to decide how to process the token.
     while (*tokenised_string != NULL) {
@@ -185,7 +199,7 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
       
       // If the token is a repeated constant or variable, assign
       // 'repeat_value_ptr' to 'table_index_ptr'.
-      if (token_value == -1 || token_value == -2 || token_value == -3) {
+      if (token_value == -CONST || token_value == -ZERO || token_value == -VARIABLE) {
 	*table_index_ptr = *repeat_value_ptr;
       }
  
@@ -240,7 +254,7 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 
       // If token is a variable and succeeds 'input', add location of operand in
       // SML memory to previous 'READ' instruction.
-      if ((token_value == -3 || token_value == VARIABLE) && statement_position == 2 &&
+      if ((token_value == -VARIABLE || token_value == VARIABLE) && token_position == 2 &&
 	  SML_memory[instruction_counter] == 100 * READ) {
 	SML_memory[instruction_counter] +=
 	  symbol_table[*table_index_ptr].location;
@@ -256,16 +270,46 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 
       // If token is a variable and succeeds 'output', add location of operand in
       // SML memory to previous 'WRITE' instruction.
-      if ((token_value == -3 || token_value == VARIABLE) && statement_position == 2 &&
+      if ((token_value == -VARIABLE || token_value == VARIABLE) && token_position == 2 &&
 	  SML_memory[instruction_counter] == 100 * WRITE) {
 	SML_memory[instruction_counter] +=
 	  symbol_table[*table_index_ptr].location;
 	instruction_counter++;
       }
 
-      // *********************** LOAD 'PRINT' INSTRUCTION **********************
+      // ************************ LOAD 'LET' INSTRUCTION ***********************
 
-      
+      // If program assigns data to a variable, initialise appropriate
+      // instructions.
+      if (token_value == LET) {
+	let = true;
+      }
+
+      // If 'let' == 'true', 
+      if (let == true) {
+
+	if (token_position >= 2) {
+	  if (token_position == 2) {
+	    strcpy(infix, *tokenised_string);
+	    strcat(infix, " ");
+	  }
+	  else {
+	    strcat(infix, *tokenised_string);
+	    strcat(infix, " ");
+	  }
+	}
+
+	if (token_position == token_number - 1) {
+	  infix[strlen(infix) - 1] = '\0';
+	  /* puts(infix); */
+
+	  /* printf("%ld\n", strlen(infix)); */
+	  postfix[strlen(infix) - 1] = '\0';
+	  /* printf("%ld\n", strlen(postfix)); */
+	  convert_to_postfix(infix, postfix);
+	  /* evaluate_postfix_expression(postfix); */	  
+	}	
+      }
 
       // ************************ CONDITIONAL STATEMENTS ***********************
 
@@ -278,7 +322,8 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
       // Assign the memory addresses of the operands to 'op1' & 'op2'.
       if (branch == true) {
 
-	if (token_value == VARIABLE || token_value == -3) {
+	// If the current token is a variable.
+	if (token_value == VARIABLE || token_value == -VARIABLE) {
 
 	  // Initialise 'LOAD' instruction & assign variable to 'op1'.
 	  if (op1 == -1) {
@@ -453,13 +498,12 @@ void first_pass(unsigned int SML_memory[], char *compiler_memory[],
 	instruction_counter++;
       }
 
-      // ***********************************************************************
+      // ************************* INCREMENT VARIABLES *************************
       
       // Increment to the next token.
       tokenised_string++;
-      statement_position++;
       token_position++;
-    } 
+    }
   }
 }
 
@@ -485,7 +529,7 @@ void second_pass(unsigned int SML_memory[], char *compiler_memory[],
   printf("\n%c", '\t');
 
   for (unsigned int i = 0; i < 10; i++) {
-    printf("%2d\t", i);
+    printf("%6d\t", i);
   }
   puts("");
 
@@ -502,10 +546,10 @@ void second_pass(unsigned int SML_memory[], char *compiler_memory[],
     }
 
     if (SML_memory[i] >= 97 && SML_memory[i] <= 122) {
-      printf("\t %c", SML_memory[i]);
+      printf("\t %5c", SML_memory[i]);
     }
     else {
-      printf("\t %d", SML_memory[i]);
+      printf("\t +%04d", SML_memory[i]);
     }
     if ((i + 1) % 10 == 0) {
       puts("");
@@ -584,10 +628,6 @@ unsigned int compare_token(char *token, unsigned int token_position,
 			   unsigned int *repeat_value_ptr,
 			   unsigned int *table_index_ptr, bool go_to)
 {  
-  // ****************************************************************************
-  // Need to clean out reduntant paramenters from function header
-  // ****************************************************************************
-  
   // Compare the passed token to the various 'simple' keywords, variables and
   // constants and call the appropriate function.
 
@@ -603,7 +643,7 @@ unsigned int compare_token(char *token, unsigned int token_position,
 	  return CONST;
 	}
 	else {
-	  return -1 * CONST; // If symbol present in table, return -1.
+	  return -CONST; // If symbol present in table, return -1.
 	}
       }
       if (!strcmp(token, "0")) { // If the token is 0.
@@ -613,7 +653,7 @@ unsigned int compare_token(char *token, unsigned int token_position,
 	  return ZERO;
 	}
 	else {
-	  return -1 * ZERO; // If symbol present in table, return -1.
+	  return -ZERO; // If symbol present in table, return -1.
 	}
       }
     }
@@ -630,7 +670,7 @@ unsigned int compare_token(char *token, unsigned int token_position,
 	return VARIABLE;
       }
       else {
-	return -1 * VARIABLE; // If symbol present in table, return -1.
+	return -VARIABLE; // If symbol present in table, return -1.
       }
     }
   }
@@ -641,7 +681,7 @@ unsigned int compare_token(char *token, unsigned int token_position,
       return LINE;
     }
     else {
-      return -1 * LINE; // If symbol present in table, return -1.
+      return -LINE; // If symbol present in table, return -1.
     }
   }
   
@@ -879,21 +919,6 @@ void save_file(unsigned int SML_memory[], char simple_file[])
   puts("");
 }
 
-// ******************************************************************************
-// *                             Function 'convert_infix'                       *
-// ******************************************************************************
-void convert_infix(void)
-{
-  ;
-}
-
-// ******************************************************************************
-// *                             Function 'evaluate_postfix'                    *
-// ******************************************************************************
-void evaluate_postfix(void)
-{
-  ;
-}
 // ******************************************************************************
 // **                                                                          **
 // **                            END FILE                                      **

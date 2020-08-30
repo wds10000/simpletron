@@ -1,13 +1,12 @@
 //  *****************************************************************************
 //  *
 //  *    simple_compiler.h -- Header file for 'simple_compiler.c'.
-//  *    Author: Wade Shiell
 //  *    Date Created: Wed Aug 26 10:02:21 2020
 //  *
 //  *****************************************************************************
 
-#ifndef COMPILER_H
-#define COMPILER_H
+#ifndef SIMPLE_COMPILR_H
+#define SIMPLE_COMPILER_H
 
 #include <stdbool.h>
 #include <ctype.h>
@@ -15,9 +14,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "infix_postfix.h"
 #define SYMBOL_SIZE 100 // Size of the symbol table.
 #define COMPILER_MEM_SIZE 100 // Size of the compiler memory.
 #define SML_MEM_SIZE 100 // Size of Simpletron memory.
+#define STATEMENT_LENGTH 100 // Length of a 'simple' assignment statement.
 
 // Enumeration for 'simple' keywords and branch statements.
 // REMARK - Line is a remark.
@@ -120,12 +121,6 @@ void replace_references(int flag[], unsigned int SML_memory[],
 
 // Saves compiled 'SML' code to disk.
 void save_file(unsigned int SML_memory[], char simple_file[]);
-
-// Need to define this function.
-void convert_infix(void);
-
-// Need to define this function.
-void evaluate_postfix(void);
 
 #endif
 

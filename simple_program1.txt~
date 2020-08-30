@@ -1,7 +1,0 @@
-00 rem stuff here
-01 rem more stuff here
-02 input x 2 2 2 2 32
-03 rem blah de plot
-04 let x = 32 06
-05 print l
-06 end

@@ -1,4 +1,0 @@
-00 input x
-10 input y
-20 goto 99
-99 end

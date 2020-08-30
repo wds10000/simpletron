@@ -3,7 +3,6 @@
 //  *    simpletron.c -- Simulates execution of a 'SML' (Simpletron Machine
 //  *                    Language) program on the Simpletron computer
 //  *                    simulator.
-//  *    Author: Wade Shiell
 //  *    Date Created: Sun Aug 16 16:46:21 2020
 //  *
 //  *****************************************************************************

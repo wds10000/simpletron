@@ -1,50 +1,13 @@
 //  *****************************************************************************
 //  *
-//  *    ex_12.c -- 
-//  *    Author: Wade Shiell
+//  *    infix_postfix.c -- Infix to postfix conversion and postfix evaluation
+//  *                       functions used by 'simple_compiler.c'.
 //  *    Date Created: Sun Aug 23 17:02:54 2020
 //  *
 //  *****************************************************************************
 
-#include <stdio.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <string.h>
-#define EXPRESSION_LENGTH 40 // Maximum length of 'infix' and 'postfix'.
+#include "infix_postfix.h"
 
-// Struct representing a node in a stack.
-struct stack_node {
-  char data; // Holds a character.
-  struct stack_node *next_node_ptr; // Points to the next node in the stack.
-};
-
-typedef struct stack_node Stack_Node;
-typedef Stack_Node *Stack_Node_Ptr;
-
-// Function prototypes.
-void convert_to_postfix(char infix[], char postfix[]);
-int is_operator(char c);
-int precedence(char operator1, char operator2);
-void push(Stack_Node_Ptr *top_ptr, char value);
-char pop(Stack_Node_Ptr *top_ptr);
-char stack_top(Stack_Node_Ptr top_ptr);
-int is_empty(Stack_Node_Ptr top_ptr);
-void print_stack(Stack_Node_Ptr top_ptr);
-
-int main(void)
-{
-  char infix[EXPRESSION_LENGTH]; // Holds an expression in infix form.
-  char postfix[EXPRESSION_LENGTH]; // Holds an expression in postfix form.
-
-  // Prompt user to enter an infix expression, and store it in 'infix'.
-  puts("Enter expression in 'infix' form:");
-  scanf("%s", infix);
-
-  // Convert the infix expression entered into a postfix expression.
-  convert_to_postfix(infix, postfix);
-}
-
-// Converts an 'infix' operation to a 'postfix' operation.
 void convert_to_postfix(char infix[], char postfix[])
 {
   Stack_Node_Ptr *top_node_ptr; // Points to the top of the stack.
@@ -112,7 +75,67 @@ void convert_to_postfix(char infix[], char postfix[])
   printf("%s\n", postfix);
 }
 
-// Determines whether c is an operator.
+int evaluate_postfix_expression(char postfix[])
+{
+  Stack_Node_Ptr *top_node_ptr; // Points to the top of the stack.
+  *top_node_ptr = NULL; // Initialise '*top_node_ptr'.
+
+  unsigned int p = 0; // Current element index of 'expression'.
+  int x, y; // Operand variables.
+  int number = 0; // Holds the value of two-digit numbers;
+  
+  // While '\0' has not been encountered, read 'expression' from left to right.
+  while (postfix[p] != '\0'){
+
+    // If the current character is a digit, push it onto the stack.
+    if (isdigit(postfix[p])) {
+      number = (postfix[p] - '0') * 10 + (postfix[p + 1] - '0');
+      push(top_node_ptr, number + '0');
+      p++;
+    }
+    // If the current character is an operator, pop the top two elements of the
+    // stack and assign them to variables x and y. Calculate x and y.
+    else if (is_operator(postfix[p])) {
+      printf("%d\n", stack_top(*top_node_ptr) - '0');
+      x = pop(top_node_ptr) - '0';
+      printf("%d\n", stack_top(*top_node_ptr) - '0');
+      y = pop(top_node_ptr) - '0';
+      printf("%c\n", postfix[p]);
+      printf("%d\n\n", calculate(x, y, postfix[p]));      
+      push(top_node_ptr, calculate(x, y, postfix[p]) + '0');
+    }
+    // Print message if character read is invalid.
+    else {
+      printf("%s\n", "Invalid character.");
+    }
+    p++;
+  }
+  
+  // Print the result of the 'postfix' evaluation.
+  printf("%s%d\n", "The result of evaluating the expression is: ",
+	 pop(top_node_ptr) - '0');
+}
+
+int calculate(int op1, int op2, char operator)
+{
+  switch (operator) {
+  case '+':
+    return op2 + op1;
+  case '-':
+    return op2 - op1;
+  case '*':
+    return op2 * op1;
+  case '/':
+    return op2 / op1;
+  case '%':
+    return op2 % op1;
+  case '^':
+    return pow(op2, op1);
+  default:
+    break;
+  }
+}
+
 int is_operator(char c)
 {
   // Compare 'c' to each of the relevant operators. If there is a match,
@@ -143,8 +166,6 @@ int is_operator(char c)
   }
 }
 
-// Determines whether the precedence of operator1 is less than, equal to or
-// greater than that of operator2. Returns -1, 0, 1 respectively.
 int precedence(char operator1, char operator2)
 {
   int a = 0; // Precedence value of operator1;
@@ -184,7 +205,6 @@ int precedence(char operator1, char operator2)
   }
 }
 
-// Push a value onto the stack.
 void push(Stack_Node_Ptr *top_ptr, char value)
 {
   Stack_Node_Ptr new_node_ptr; // Declare a pointer to a node.
@@ -207,7 +227,6 @@ void push(Stack_Node_Ptr *top_ptr, char value)
   }
 }
 
-// Pop a value from the stack.
 char pop(Stack_Node_Ptr *top_ptr)
 {
   char value; // Value to be returned.
@@ -226,7 +245,6 @@ char pop(Stack_Node_Ptr *top_ptr)
   return value;
 }
 
-// Returns the top value of the stack without popping the stack.
 char stack_top(Stack_Node_Ptr top_ptr)
 {
   char value; // Value in the top node.
@@ -236,7 +254,6 @@ char stack_top(Stack_Node_Ptr top_ptr)
   return value; // Return the value in the top node.
 }
 
-// Determines whether the stack is empty.
 int is_empty(Stack_Node_Ptr top_ptr)
 {
   // If the top node is NULL, the stack is empty, so return 1.
@@ -249,7 +266,6 @@ int is_empty(Stack_Node_Ptr top_ptr)
   }
 }
 
-// Prints the stack.
 void print_stack(Stack_Node_Ptr top_ptr)
 {
   // If the stack is not empty, print it's values. Otherwise, print an

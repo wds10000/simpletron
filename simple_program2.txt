@@ -6,4 +6,5 @@
 50 if x == y goto 70
 60 input z
 70 print z
+80 let m = m + 1
 99 end

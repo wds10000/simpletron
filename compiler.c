@@ -1,12 +1,12 @@
 //  *****************************************************************************
 //  *
 //  *    compiler.c -- Compiles programs written in 'simple'.
-//  *    Author: Wade Shiell
 //  *    Date Created: Wed Aug 26 10:21:03 2020
 //  *
 //  *****************************************************************************
 
 #include "simple_compiler.h"
+#include "infix_postfix.h"
 
 int main(int argc, char **argv)
 {
