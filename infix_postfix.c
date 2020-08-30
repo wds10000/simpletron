@@ -12,6 +12,7 @@ void convert_to_postfix(char infix[], char postfix[])
 {
   Stack_Node_Ptr *top_node_ptr; // Points to the top of the stack.
   *top_node_ptr = NULL; // Initialise '*top_node_ptr'.
+  /* puts("Test"); */
   unsigned int i = 0; // Current element index in 'infix'.
   unsigned int p = 0; // Current element index in 'postfix'.
   unsigned int length = strlen(infix); // Length of 'postfix'.
