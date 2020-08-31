@@ -6,7 +6,6 @@
 //  *****************************************************************************
 
 #include "simple_compiler.h"
-#include "infix_postfix.h"
 
 int main(int argc, char **argv)
 {
@@ -18,7 +17,13 @@ int main(int argc, char **argv)
 
   // Loads a 'simple' program file and compiles it to SML, then saves the
   // resulting 'machine-ready' SML code to disk.
-  compile(argv[1]);
+
+  if (argv[1] != NULL) {
+    compile(argv[1]);
+  }
+  else {
+    printf("%s\n", "No argument provided. Enter file name after './compiler'.");
+  }
 }
 
 // ******************************************************************************

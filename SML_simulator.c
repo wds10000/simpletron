@@ -404,7 +404,7 @@ void print_output(Print_Struct_Ptr *print_struct_ptr, char* program_name)
   FILE *output_ptr; // Pointer to file containing program output.
   char output_file[100] = "(output)_"; // Name of the file output is saved to
                                        // (add 5 so ".txt" & '\0' can be added).
-  int length = strlen(program_name); // Length of 'program_name'.
+  unsigned int length = strlen(program_name); // Length of 'program_name'.
 
   // Append 'program_name' to '(output)_".
   for (size_t i = 0; i < length; i++){

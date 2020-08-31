@@ -10,7 +10,7 @@
 
 void convert_to_postfix(char infix[], char postfix[])
 {
-  Stack_Node_Ptr *top_node_ptr; // Points to the top of the stack.
+  Stack_Node_Ptr *top_node_ptr = NULL; // Points to the top of the stack.
   *top_node_ptr = NULL; // Initialise '*top_node_ptr'.
   /* puts("Test"); */
   unsigned int i = 0; // Current element index in 'infix'.
@@ -79,7 +79,7 @@ void convert_to_postfix(char infix[], char postfix[])
 
 int evaluate_postfix_expression(char postfix[])
 {
-  Stack_Node_Ptr *top_node_ptr; // Points to the top of the stack.
+  Stack_Node_Ptr *top_node_ptr = NULL; // Points to the top of the stack.
   *top_node_ptr = NULL; // Initialise '*top_node_ptr'.
 
   unsigned int p = 0; // Current element index of 'expression'.
